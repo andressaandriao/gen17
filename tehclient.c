@@ -7,63 +7,76 @@
 #include <string.h>
 #include <errno.h>
 
-#include <pthread.h> 
-#include "echoserver.c"//comentar aqui para retirar threads
+#include <pthread.h>
+#include "common_variables.h"
 
 #define PORTA 22000
 
+/*******************************************************************************
+ *	NOME:		sendmessage
+ *	FUNÇÃO:		Envia mensagem pelo socket do cliente
+ *
+ *			Tipo					Descrição
+ *     		char* sendline
+ *     		int   sockfd
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
 void sendmessage(char *sendline, int sockfd)
 {
-	bzero( sendline, 100);
+	bzero(sendline, 100);
 	//bzero( recvline, 100);
 	
 	printf("Digite a mensagem: ");
+
+	//POSSIVEL TRATAMENTO PARA ENVIAR MENSAGENS MAIS COMPRIDAS!
 	fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
 	
 	write(sockfd, sendline, strlen(sendline)+1);
 	//read(sockfd,recvline,100); //no more echoing
 	//printf("%s",recvline);
 }
- 
-int main(int argc,char **argv)
-{
-	
-	/*criar thread*/
-	pthread_t serverthread;
-	
-	if( pthread_create(&serverthread, NULL, (void *)serverfunc, NULL) != 0)
-	{
-		printf("Erro em criar a thread de servidor.\nSaindo do programa.");
-		exit(1);
-	}
-	else
-		printf("Thread created\n\n");
-	/*criar thread, fim*/
-		
-	
-	typedef struct pcdata {
+
+/*******************************************************************************
+ *	NOME:		clientfunc
+ *	FUNÇÃO:		Thread cliente. Contem o menu principal tambem, onde o usuario
+ *				escolhe as funcoes de adicionar contato, enviar mensagens e sair.
+ *
+ *			Tipo					Descrição
+ *     		void *thread_id			Identificacao da thread
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
+void *clientfunc(void *thread_id){
+
+	/*typedef struct pcdata {
 		char hostip[16];
 		char hostname[50];
-	} hostdata;
-	
-	hostdata hostslist;//fazer uma lista encadeada
+	}hostdata;
 
-    int tempchoice, numdecontatos = 0;
+	hostdata hostslist;
+	*/
+
+	//Variaveis para o menu
+    int tempchoice;
     char choice[2];
-    char pcip[16];//16 pq 4*3(max numeros) + 3(pontos) + 1(\n)
+
+	int numdecontatos = 0;
+    char pcip[16];				//16 pq 4*3(max numeros) + 3(pontos) + 1(\n)
  
     
     int sockfd;
     char sendline[100];
     //char recvline[100];
     struct sockaddr_in servaddr;
-    
+
     do{
-		
+
 		__fpurge(stdin);
 		printf("Deseja:\n1-Inserir contato\n2-mandar mensagem\n3-sair\n\n");
-		choice[1] = getchar();
-		choice[2] = '\0';//manter a semantica de atoi (precisa de \0)
+		choice[0] = getchar();
+		__fpurge(stdin);
+		choice[1] = '\0';//manter a semantica de atoi (precisa de \0)
 		tempchoice = atoi(choice);
 		//printf("%c ", choice[0]); //prints para teste
 		//printf("%d\n", tempchoice);
@@ -84,7 +97,7 @@ int main(int argc,char **argv)
 					exit(1);//fazer tratamento de erro melhor
 				}
 					
-				bzero(&servaddr,sizeof servaddr);
+				bzero(&servaddr,sizeof(servaddr));
 				servaddr.sin_family=AF_INET;
 				servaddr.sin_port=htons(PORTA);
  
@@ -118,11 +131,8 @@ int main(int argc,char **argv)
 				printf("Escolha invalida\n\n");
 				break;
 		}
-		
+
 	}while(tempchoice!=3);
 	
 	close(sockfd);
-	
-	return 0;
- 
 }

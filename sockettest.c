@@ -6,7 +6,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 
-main ()
+int main(int argc,char **argv)
 {
 	int sock, cli;
 	struct sockaddr_in server, client;
