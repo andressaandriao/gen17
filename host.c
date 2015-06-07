@@ -192,7 +192,7 @@ void serverfunc(){
 
 		if(read(comm_fd, str, 100))
 		{
-			printf("%s sent a message: %s", inet_ntoa(clientaddr.sin_addr), str);
+			printf("%s mandou uma mensagem: %s", inet_ntoa(clientaddr.sin_addr), str);
 			//write(comm_fd, str, strlen(str)+1); //no more echoing
 		}
 
