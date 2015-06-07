@@ -8,10 +8,33 @@
 #include <errno.h>
 
 #include <pthread.h> 
-#include "echoserver.c"//comentar aqui para retirar threads
 
 #define PORTA 22000
 
+//Variaveis globais//////////
+
+typedef struct pcdata {
+		char hostip[16];
+		char hostname[50];
+	} hostdata;
+
+	hostdata hostslist[50];//fazer uma lista encadeada?
+
+int numdecontatos = 0;
+
+//fim variaveris globais//////
+
+
+/*******************************************************************************
+ *	NOME:		sendmessage
+ *	FUNÇÃO:		Envia mensagem pelo socket do cliente
+ *
+ *			Tipo					Descrição
+ *     		char* sendline
+ *     		int   sockfd
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
 void sendmessage(char *sendline, int sockfd)
 {
 	bzero( sendline, 100);
@@ -23,19 +46,46 @@ void sendmessage(char *sendline, int sockfd)
 }
 
 
-//Variaveis globais//////////
-
-typedef struct pcdata {
-		char hostip[16];
-		char hostname[50];
-	} hostdata;
+void *serverfunc(){
 	
-	hostdata hostslist[50];//fazer uma lista encadeada?
+    char str[100];
+    int listen_fd, comm_fd;
 
-int numdecontatos = 0;
+    struct sockaddr_in servaddr, senderaddr;
 
-//fim variaveris globais//////
- 
+    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    bzero( &servaddr, sizeof(servaddr));
+
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htons(INADDR_ANY);
+    servaddr.sin_port = htons(22000);
+
+    bind(listen_fd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+
+    listen(listen_fd, 10);
+
+	int senderaddrlen = sizeof(struct sockaddr_in);
+    comm_fd = accept(listen_fd, (struct sockaddr*) &senderaddr, (socklen_t*)&senderaddrlen );
+	//printf("Greetings from server\n");
+    while(1)
+    {
+
+        bzero(str, 100);
+
+        if( read(comm_fd, str, 100) )
+        {
+			printf("%s sent a message: %s", inet_ntoa( senderaddr.sin_addr ), str);
+			//write(comm_fd, str, strlen(str)+1); //no more echoing
+        }
+
+    }
+
+    close(listen_fd);
+
+    //return 0;
+}
+
  
 int main(int argc,char **argv)
 {
@@ -43,7 +93,7 @@ int main(int argc,char **argv)
 	/*criar thread*/
 	pthread_t serverthread;
 	
-	if( pthread_create(&serverthread, NULL, (void *)serverfunc, NULL) != 0)
+	if( pthread_create(&serverthread, NULL, serverfunc, NULL) != 0)
 	{
 		printf("Erro em criar a thread de servidor.\nSaindo do programa.");
 		exit(1);

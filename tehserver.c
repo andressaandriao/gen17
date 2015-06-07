@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common_variables.h"
 #define PORTA 22000
 
  
@@ -57,8 +56,7 @@ void *serverfunc(void *thread_id)
      */
     while(1)
     {
- 
-        bzero(str, 100);
+    	bzero(str, 100);
  
         if( read(comm_fd, str, 100) )
         {
@@ -67,7 +65,5 @@ void *serverfunc(void *thread_id)
         }
  
     }
-    
     close(listen_fd);
-    
 }

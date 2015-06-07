@@ -8,7 +8,6 @@
 #include <errno.h>
 
 #include <pthread.h>
-#include "common_variables.h"
 
 #define PORTA 22000
 
@@ -49,13 +48,13 @@ void sendmessage(char *sendline, int sockfd)
  *******************************************************************************/
 void *clientfunc(void *thread_id){
 
-	/*typedef struct pcdata {
+	typedef struct pcdata {
 		char hostip[16];
 		char hostname[50];
 	}hostdata;
 
 	hostdata hostslist;
-	*/
+
 
 	//Variaveis para o menu
     int tempchoice;

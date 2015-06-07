@@ -39,14 +39,10 @@ int numdecontatos;    //Guarda o numero de contatos adicionados ate o momento. T
 
 int client_add;       //Variavel para passar a informacao do menu para thread cliente sobre adicionar contato
 int client_send;      //variavel para passar informacao do menu para thread cliente para enviar mensagem
-int server_send;      //variavel para passar informacao do menu para thread servidor para enviar mensagem
 int prog_end;         //verifica se e o fim do programa nas threads cliente e servidor
 
 
-sem_t 	sem_client,			//Semaforo para esperar o cliente
-		sem_server, 		//Semaforo para esperar o servidor
-		sem_hostslist;		//Semaforo para proteger hostslist (regiao critica)
-
+sem_t 	sem_client;			//Semaforo para esperar o cliente
 
 //fim variaveris globais//////
 
@@ -85,6 +81,7 @@ void clientfunc(){
     int sockfd;
     char sendline[100];
     struct sockaddr_in servaddr;
+    int i, added = 0;
 
     //Continua no loop enquanto menu nao avisar que o programa chegou ao fim atraves da variavel global
     while(prog_end != 1){
@@ -96,61 +93,75 @@ void clientfunc(){
     	 
     	//Se na thread menu o usuario deseja adicionar novo contato
     	if(client_add == 1){
-    		printf("Digite o ip do contato que deseja inserir: ");
-			  fgets(hostslist[numdecontatos].hostip, 16, stdin);
-			  __fpurge(stdin);
+			//Todas as informacoes estarao na regiao da struct. O servidor tbm as acessa
+			//Por isso e necessario colocar um semaforo.
+			printf("Digite o ip do contato que deseja inserir: ");
+			fgets(pcip, 16, stdin);
+			__fpurge(stdin);
+			for(i = 0; i<numdecontatos; i++){
+				if(strcmp(hostslist[i].hostip,pcip) == 0){
+					added = 1;
+				}
+			}
+			if(added == 1){
+				printf("Contato ja existente!\n\n");
+				client_add = 0;
+				sem_post(&sem_client);
+			}
+			else{
+				added = 0;
+				strcpy(hostslist[i].hostip, pcip);
 
-    		sockfd = socket(AF_INET, SOCK_STREAM, 0);
-			  //printf("\n%s\n", hostslist.hostip);
+				sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-  			if(sockfd == -1)//erro
-	  		{
-		  		perror("Socket dun goofed");
-			  	exit(1);//fazer tratamento de erro melhor
-			  }
+				if(sockfd == -1)//erro
+				{
+					perror("Socket dun goofed");
+					client_add = 0;
+					sem_post(&sem_client);
+					exit(1); //fazer tratamento de erro melhor
+				}
 
-			  bzero(&servaddr,sizeof(servaddr));
-			  servaddr.sin_family=AF_INET;
-			  servaddr.sin_port=htons(PORTA);
+				bzero(&servaddr,sizeof(servaddr));
+				servaddr.sin_family=AF_INET;
+				servaddr.sin_port=htons(PORTA);
 
-  			inet_pton(AF_INET, pcip, &(servaddr.sin_addr));//127.0.0.1 (ip targeting self)
-  
-	  		if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
-		  	{
-			  	perror("Connect dun goofed");
-				  close(sockfd);//closing dedicated socket
-			  }
-			  else
-			  {
-				  printf("Digite o apelido para o host de IP %s", hostslist[numdecontatos].hostip);
-				  __fpurge(stdin);
-				  fgets(hostslist[numdecontatos].hostname, 50, stdin);
-				  strtok(hostslist[numdecontatos].hostname, "\n"); //Tira o \n no final
-				  __fpurge(stdin);
-				  hostslist[numdecontatos].clientserver = 0;
-				  printf("Dados salvos com sucesso\n\n");
-				  numdecontatos++;
-			  }
-			  //Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que 
-			  //o cliente adicione novo contato.
-			  client_add = 0;
-			  //Acorda a thread menu
-			  sem_post(&sem_client);
+				inet_pton(AF_INET, pcip, &(servaddr.sin_addr));//127.0.0.1 (ip targeting self)
+
+				if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
+				{
+					perror("Connect dun goofed");
+					close(sockfd);//closing dedicated socket
+				}
+				else
+				{
+					printf("Digite o apelido para o host de IP %s", hostslist[numdecontatos].hostip);
+					__fpurge(stdin);
+					fgets(hostslist[numdecontatos].hostname, 50, stdin);
+					strtok(hostslist[numdecontatos].hostname, "\n"); //Tira o \n no final
+					__fpurge(stdin);
+					numdecontatos++;
+					printf("Dados salvos com sucesso\n\n");
+				}
+				//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
+				//o cliente adicione novo contato.
+				client_add = 0;
+				//Acorda a thread menu
+				sem_post(&sem_client);
+			}
     	}
-    	
     	//Menu avisou pela variavel global que o cliente deve enviar uma mensagem
     	if(client_send == 1){
-			  sendmessage(sendline, sockfd);
-			  
-			  //Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que 
-    		client_send = 0;
-    		
-    		//Acorda a thread menu
-    		sem_post(&sem_client);
-    	}
-    }
+			sendmessage(sendline, sockfd);
 
-	close(sockfd);
+			//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
+			client_send = 0;
+
+			//Acorda a thread menu
+			sem_post(&sem_client);
+		}
+    }
+   	close(sockfd);
 }
 
 /*******************************************************************************
@@ -161,13 +172,13 @@ void clientfunc(){
  *******************************************************************************/
 void serverfunc(){
 
-  char str[100];
-  char ip[16];
-  int listen_fd, comm_fd;
+	char str[100];
+	char ip[16];
+	int listen_fd, comm_fd;
 
-  struct sockaddr_in servaddr, clientaddr;
+	struct sockaddr_in servaddr, clientaddr;
 
-  listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+	listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 
 	bzero(&servaddr, sizeof(servaddr));
 
@@ -208,11 +219,12 @@ void serverfunc(){
  *
  *	RETORNO:	void
  *******************************************************************************/
-int send_message(){
+void send_message(){
 	int i, erro;
 	char option;
 	char stringAux[50];
 	printf("Para quem gostaria de mandar a mensagem?\n1 - Endereco IPv4 do destinatario\n2 - Nome do destinatario\n");
+	//Se host for o servidor na conexao
 	erro = 1;
 	__fpurge(stdin);
 	option = getchar();
@@ -239,23 +251,13 @@ int send_message(){
 			}
 		}
 	}
-	//Erro = 0 indica que o IP ou usuario desejado foi encontrado
 	if (erro == 0){
-	  //Usuario e servidor na determinada conexao
-		if(hostslist[i].clientserver == 1){
-			return 1;
-		}
-		//Usuario e cliente na determinada  conexao
-		else{
-			return 0;
-		}
+		client_send = 1;
 	}
 	else{
 		printf("Contato nao encontrado");
-		return 2;
 	}
 }
-
 /*******************************************************************************
  *	NOME:		list_contacts
  *	FUNÇÃO:		Lista os contatos
@@ -314,17 +316,9 @@ void menu_handle(){
 				break;
 
 			case 4:
-				aux = send_message();
-				//Se for cliente, dorme esperando o cliente terminar.
-				if (aux == 0){
-					client_send = 1;
-					sem_wait(&sem_client);
-				}
-				//Se for servidor, dorme esperando o servidor terminar.
-				else{
-					server_send = 1;
-					sem_wait(&sem_server);
-				}
+				send_message();
+				//Dorme enquanto espera a thread cliente executar.
+				sem_wait(&sem_client);
 				break;
 
 			case 5:
@@ -352,8 +346,6 @@ void menu_handle(){
  *******************************************************************************/
 void init_semaphores() {
 	sem_init(&sem_client, 0, 0);
-	sem_init(&sem_server, 0, 0);
-	sem_init(&sem_hostslist, 0, 0);
 }
 
 /*******************************************************************************
@@ -400,7 +392,6 @@ int main(int argc,char **argv){
 	prog_end = 0;
 	client_add = 0;
 	client_send = 0;
-	server_send = 0;
 	numdecontatos = 0;
 
 	pthread_t serverthread, clientthread, menuthread;
