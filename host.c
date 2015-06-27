@@ -2,6 +2,8 @@
  * host.c
  *
  *  Created on: 05/06/2015
+ *  ALUNOS: ANDRESSA BAPTISTINE ANDRIAO		NUSP: 7547020
+ *  		GUILHERME NISHINA FORTES		NUSP: 7245552
  * 
  */
 
@@ -333,7 +335,7 @@ void menu_handle(){
 				break;
 		}
 
-	}while(tempchoice!=6);
+	}while(tempchoice!= 6);
 
     prog_end = 1;
 }
