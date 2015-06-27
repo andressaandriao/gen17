@@ -121,7 +121,7 @@ void clientfunc(){
 
 				sockfd[numdecontatos] = socket(AF_INET, SOCK_STREAM, 0);
 
-				if(sockfd == -1)//erro
+				if(sockfd[numdecontatos] == -1)//erro
 				{
 					perror("Socket dun goofed");
 					client_add = 0;
