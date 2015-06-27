@@ -217,8 +217,8 @@ void serverfunc(){
 	servaddr.sin_port = htons(PORTA);
 
 	if(bind(listen_fd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0){
-		printf("%s", inet_ntoa(servaddr.sin_addr));
-		printf("Houve erro no bind");
+		printf("%s ", inet_ntoa(servaddr.sin_addr));
+		perror("Houve erro no bind");
 	}
 
 	listen(listen_fd, MAXHOSTS);
@@ -233,7 +233,7 @@ void serverfunc(){
 		strcpy( new_connection->chat_ip, inet_ntoa(clientaddr.sin_addr) );
 		
 		if( pthread_create(&listenerthread, NULL, serverlistener, (void*) new_connection) < 0 )
-			printf("Erro, thread ouvinte nao criada");
+			perror("Erro, thread ouvinte nao criada");
 		
 	}//listener criado
 	
