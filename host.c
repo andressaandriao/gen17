@@ -2,8 +2,6 @@
  * host.c
  *
  *  Created on: 05/06/2015
- *  ALUNOS: ANDRESSA BAPTISTINE ANDRIAO		NUSP: 7547020
- *  		GUILHERME NISHINA FORTES		NUSP: 7245552
  * 
  */
 
@@ -25,7 +23,7 @@
 #include <semaphore.h>
 
 #define PORTA 22000
-#define MAXHOSTS 50
+#define MAXHOSTS 20
 
 //Variaveis globais//////////
 
@@ -99,6 +97,7 @@ void clientfunc(){
 			//Por isso e necessario colocar um semaforo.
 			printf("Digite o ip do contato que deseja inserir: ");
 			fgets(pcip, 16, stdin);
+			strtok(pcip, "\n");
 			__fpurge(stdin);
 			for(i = 0; i<numdecontatos; i++){
 				if(strcmp(hostslist[i].hostip,pcip) == 0){
@@ -112,7 +111,7 @@ void clientfunc(){
 			}
 			else{
 				added = 0;
-				strcpy(hostslist[i].hostip, pcip);
+				strcpy(hostslist[numdecontatos].hostip, pcip);
 
 				sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -175,7 +174,6 @@ void clientfunc(){
 void serverfunc(){
 
 	char str[100];
-	char ip[16];
 	int listen_fd, comm_fd;
 
 	struct sockaddr_in servaddr, clientaddr;
@@ -185,21 +183,27 @@ void serverfunc(){
 	bzero(&servaddr, sizeof(servaddr));
 
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htons(INADDR_ANY);
+	servaddr.sin_addr.s_addr = INADDR_ANY;
 	servaddr.sin_port = htons(PORTA);
 
-	bind(listen_fd, (struct sockaddr*) &servaddr, sizeof(servaddr));
+	if(bind(listen_fd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0){
+		printf("Houve erro no bind");
+	}
 
-	listen(listen_fd, 10);
+	listen(listen_fd, MAXHOSTS);
 
 	int clientaddrlen = sizeof(struct sockaddr_in);
 	comm_fd = accept(listen_fd, (struct sockaddr*) &clientaddr, (socklen_t*)&clientaddrlen);
+	printf("*********************************************** %d", comm_fd);
+	printf("Aceitei conexao");
 	if(comm_fd < 0){
 		printf("Erro ao aceitar conexao no servidor");
 	}
 
 	 while(prog_end != 1)
 	{
+
+		printf("%s", inet_ntoa(clientaddr.sin_addr));
 
 		bzero(str, 100);
 
@@ -335,7 +339,7 @@ void menu_handle(){
 				break;
 		}
 
-	}while(tempchoice!= 6);
+	}while(tempchoice!=6);
 
     prog_end = 1;
 }
