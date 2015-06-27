@@ -217,6 +217,7 @@ void serverfunc(){
 	servaddr.sin_port = htons(PORTA);
 
 	if(bind(listen_fd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0){
+		printf("%s", inet_ntoa(servaddr.sin_addr));
 		printf("Houve erro no bind");
 	}
 
