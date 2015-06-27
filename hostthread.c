@@ -159,6 +159,7 @@ void clientfunc(){
     	}
     	//Menu avisou pela variavel global que o cliente deve enviar uma mensagem
     	if(client_send == 1){
+
 			sendmessage(sendline, sockfd[contato]);
 
 			//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
@@ -167,6 +168,25 @@ void clientfunc(){
 			//Acorda a thread menu
 			sem_post(&sem_client);
 		}
+    	//Caso for broadcast
+    	if(client_send == 2){
+
+    		bzero(sendline, 100);
+
+    		printf("Digite a mensagem: ");
+    		fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
+    		__fpurge(stdin);
+
+    		for(i = 0; i < numdecontatos; i++){
+    			write(sockfd[i], sendline, strlen(sendline)+1);
+    		}
+
+    		//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
+    		client_send = 0;
+
+    		//Acorda a thread menu
+    		sem_post(&sem_client);
+    	}
     }
    	close(sockfd);
 }
@@ -302,23 +322,6 @@ void send_message(){
 }
 
 /*******************************************************************************
- *	NOME:		send_broadcast
- *	FUNÇÃO:
- *
- *	RETORNO:	void
- *******************************************************************************/
-void send_broadcast(){
-	int i;
-
-	for(i = 0; i < numdecontatos; i++){
-		contato = i;
-		client_send = 1;
-		sem_wait(&sem_client);
-	}
-
-}
-
-/*******************************************************************************
  *	NOME:		list_contacts
  *	FUNÇÃO:		Lista os contatos
  *
@@ -382,7 +385,8 @@ void menu_handle(){
 				break;
 
 			case 5:
-				send_broadcast();
+				client_send = 2;
+				sem_wait(&sem_client);
 				break;
 
 			case 6:
