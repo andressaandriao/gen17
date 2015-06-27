@@ -382,6 +382,7 @@ void menu_handle(){
 				break;
 
 			case 5:
+				send_broadcast();
 				break;
 
 			case 6:
