@@ -159,7 +159,7 @@ void clientfunc(){
     	}
     	//Menu avisou pela variavel global que o cliente deve enviar uma mensagem
     	if(client_send == 1){
-			sendmessage(sendline, sockfd);
+			sendmessage(sendline, sockfd[contato]);
 
 			//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
 			client_send = 0;
