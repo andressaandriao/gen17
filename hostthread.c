@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#define PORTA 22000
+#define PORTA 8888
 #define MAXHOSTS 20
 
 //Variaveis globais//////////
@@ -190,7 +190,6 @@ void *serverlistener(void *conn_data)
 	
 	}
 	
-
 }
 
 /*******************************************************************************
