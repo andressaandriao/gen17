@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#define PORTA 7700
 #define MAXHOSTS 20
 
 //Variaveis globais//////////
@@ -46,7 +47,6 @@ int client_add;       //Variavel para passar a informacao do menu para thread cl
 int client_send;      //variavel para passar informacao do menu para thread cliente para enviar mensagem
 int prog_end;         //verifica se e o fim do programa nas threads cliente e servidor
 int contato;		  //Variavel para passar a informacao de para qual dos clientes do vetor e a mensagem.
-int PORTA;			  //Utilizar uma porta diferente para nao haver erro de bind quando o programa e rodado consecutivamente.
 
 sem_t 	sem_client;			//Semaforo para esperar o cliente
 
@@ -458,9 +458,6 @@ int main(int argc,char **argv){
 	client_add = 0;
 	client_send = 0;
 	numdecontatos = 0;
-
-	srand(time(NULL));
-	PORTA = 20000 + rand();
 
 
 	pthread_t serverthread, clientthread, menuthread;
