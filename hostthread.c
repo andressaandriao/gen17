@@ -46,7 +46,7 @@ int numdecontatos;    //Guarda o numero de contatos adicionados ate o momento. T
 int client_add;       //Variavel para passar a informacao do menu para thread cliente sobre adicionar contato
 int client_send;      //variavel para passar informacao do menu para thread cliente para enviar mensagem
 int prog_end;         //verifica se e o fim do programa nas threads cliente e servidor
-
+int contato;		  //Variavel para passar a informacao de para qual dos clientes do vetor e a mensagem.
 
 sem_t 	sem_client;			//Semaforo para esperar o cliente
 
@@ -84,7 +84,7 @@ void clientfunc(){
 
     char pcip[16];	//16 pq 4*3(max numeros) + 3(pontos) + 1(\n)
 
-    int sockfd;
+    int sockfd[MAXHOSTS];
     char sendline[100];
     struct sockaddr_in servaddr;
     int i, added = 0;
@@ -119,7 +119,7 @@ void clientfunc(){
 				added = 0;
 				strcpy(hostslist[numdecontatos].hostip, pcip);
 
-				sockfd = socket(AF_INET, SOCK_STREAM, 0);
+				sockfd[numdecontatos] = socket(AF_INET, SOCK_STREAM, 0);
 
 				if(sockfd == -1)//erro
 				{
@@ -135,7 +135,7 @@ void clientfunc(){
 
 				inet_pton(AF_INET, pcip, &(servaddr.sin_addr));//127.0.0.1 (ip targeting self)
 
-				if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
+				if(connect(sockfd[numdecontatos], (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
 				{
 					perror("Connect dun goofed");
 					close(sockfd);//closing dedicated socket
@@ -215,7 +215,7 @@ void serverfunc(){
 
 	int enable = 1;
 	if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int) < 0))
-		printf("setsockopt(SO_REUSEADDR) failed");
+		//printf("setsockopt(SO_REUSEADDR) failed");
 
 	bzero(&servaddr, sizeof(servaddr));
 
@@ -274,6 +274,7 @@ void send_message(){
 		fgets(stringAux, 16, stdin);
 		for(i = 0; i < numdecontatos; i++){
 			if(strcmp(hostslist[i].hostip, stringAux) == 0){
+				contato = i;
 				erro = 0;
 				break;
 			}
@@ -286,6 +287,7 @@ void send_message(){
 		strtok(stringAux, "\n");
 		for(i = 0; i < numdecontatos; i++){
 			if(strcmp(hostslist[i].hostname, stringAux) == 0){
+				contato = i;
 				erro = 0;
 				break;
 			}
