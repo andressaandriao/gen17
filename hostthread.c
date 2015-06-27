@@ -300,6 +300,24 @@ void send_message(){
 		printf("Contato nao encontrado");
 	}
 }
+
+/*******************************************************************************
+ *	NOME:		send_broadcast
+ *	FUNÇÃO:
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
+void send_broadcast(){
+	int i;
+
+	for(i = 0; i < numdecontatos; i++){
+		contato = i;
+		client_send = 1;
+		sem_wait(&sem_client);
+	}
+
+}
+
 /*******************************************************************************
  *	NOME:		list_contacts
  *	FUNÇÃO:		Lista os contatos
