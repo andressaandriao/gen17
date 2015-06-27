@@ -209,6 +209,10 @@ void serverfunc(){
 
 	listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 
+	if(listen_fd == -1){
+		perror("Erro na criacao do socket");
+	}
+
 	int enable = 1;
 	if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int) < 0))
 		perror("setsockopt(SO_REUSEADDR) failed");
