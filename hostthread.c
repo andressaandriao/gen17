@@ -209,6 +209,10 @@ void serverfunc(){
 
 	listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 
+	int enable = 1;
+	if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int) < 0))
+		perror("setsockopt(SO_REUSEADDR) failed");
+
 	bzero(&servaddr, sizeof(servaddr));
 
 	servaddr.sin_family = AF_INET;
