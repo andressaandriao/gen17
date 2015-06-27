@@ -215,7 +215,7 @@ void serverfunc(){
 
 	int enable = 1;
 	if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int) < 0))
-		perror("setsockopt(SO_REUSEADDR) failed");
+		printf("setsockopt(SO_REUSEADDR) failed");
 
 	bzero(&servaddr, sizeof(servaddr));
 
@@ -444,7 +444,6 @@ int main(int argc,char **argv){
 	else{
 		pthread_join(menuthread, NULL);
 	    pthread_join(clientthread, NULL);
-	    pthread_join(serverthread, NULL);
 		return 0;
 	}
 }
