@@ -229,7 +229,7 @@ void serverfunc(){
 		pthread_t listenerthread;
 		new_connection = (listenerthreadparameters*)malloc(sizeof(listenerthreadparameters));
 		new_connection->tempsock = comm_fd;
-		strcpy( new_connection->chat_ip, inet_ntoa(clientaddr.sin.addr) );
+		strcpy( new_connection->chat_ip, inet_ntoa(clientaddr.sin_addr) );
 		
 		if( pthread_create(&listenerthread, NULL, serverlistener, (void*) new_connection) < 0 )
 			printf("Erro, thread ouvinte nao criada");
