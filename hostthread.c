@@ -118,7 +118,7 @@ void clientfunc(){
     char pcip[16];	//16 pq 4*3(max numeros) + 3(pontos) + 1(\n)
 
     int sockfd[MAXHOSTS];
-    char sendline[100], verifier, verifybuff[4];
+    char sendline[100], verifier, verifybuff[4], sendtome;
     struct sockaddr_in servaddr;
     int i, added = 0, j, k, erroip = 0, ipsegmentvalue, dotcount = 0;
 
