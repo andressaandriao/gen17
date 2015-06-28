@@ -86,6 +86,7 @@ void sendmessage(char *sendline, int sockfd)
 
 		if(write(sockfd, sendline, strlen(sendline)+1) == -1){
 			perror("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
+		}
 	}
 }
 
