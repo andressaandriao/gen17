@@ -221,10 +221,23 @@ void *serverlistener(void *conn_data)
 {
 	listenerthreadparameters connection_descriptor = *(listenerthreadparameters*)conn_data;
 	char rcv_msg[1001];
+	char fEmpty;
+	int pos = 1+sizeof(int);
 	
 	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 )
 	{
-		fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+		fseek(chat_log, 0, SEEK_SET);
+		fEmpty = fgetc(chat_log);
+		if(fEmpty == 0){
+			fwrite(&pos, sizeof(int), 1, chat_log);
+			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+			fseek(chat_log, 0, SEEK_SET);
+			fputc('1', chat_log);
+		}
+		else{
+			fseek(chat_log, 0, SEEK_END);
+			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+		}
 		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 	}
 }
