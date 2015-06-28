@@ -35,6 +35,7 @@ typedef struct serveraddrhandler {
 	
 	int tempsock;
 	char chat_ip[16];
+	int contactpos;
 } listenerthreadparameters;
 
 int numdecontatos;    //Guarda o numero de contatos adicionados ate o momento. Tanto como cliente quanto servidor.
@@ -76,6 +77,35 @@ void sendmessage(char *sendline, int sockfd)
 	}
 }
 
+
+/*******************************************************************************
+ *	NOME:		clientpoke
+ *	FUNÇÃO:		Thread que recebe as cutucadas do servidor para saber o status
+ * 				da conexao.
+ * 
+ *	RETORNO:	void
+ *******************************************************************************/
+ void *clientpoke(void *contactinfo) {
+	
+	printf("Clientpoke criada\n");
+	listenerthreadparameters serverparameters = *(listenerthreadparameters*) contactinfo;
+	char buffer[2];	
+	struct timeval tv;
+	
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	
+	setsockopt( serverparameters.tempsock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval) );	
+	while(recv(serverparameters.tempsock, buffer, 1, 0) > 0){printf("Recebi um pokemon\n");}
+	
+	hostslist[serverparameters.contactpos].exist = 0;
+	printf("Encerrando clientpoke, veja se eu exclui o contato plz\n");
+	
+	
+	close(sock);		
+ }
+
+
 /*******************************************************************************
  *	NOME:		clientfunc
  *	FUNÇÃO:		Thread do cliente. Fara todas as operacoes que estao ligadas ao
@@ -84,6 +114,8 @@ void sendmessage(char *sendline, int sockfd)
  *	RETORNO:	void
  *******************************************************************************/
 void clientfunc(){
+
+	listenerthreadparameters *new_connection;
 
     char pcip[16];	//16 pq 4*3(max numeros) + 3(pontos) + 1(\n)
 
@@ -123,7 +155,7 @@ void clientfunc(){
 				strcpy(hostslist[numdecontatos].hostip, pcip);
 
 				sockfd[numdecontatos] = socket(AF_INET, SOCK_STREAM, 0);
-
+				
 				if(sockfd[numdecontatos] == -1)//erro
 				{
 					perror("Socket dun goofed");
@@ -145,6 +177,16 @@ void clientfunc(){
 				}
 				else
 				{
+					
+							
+					pthread_t pokedthread;
+					new_connection = (listenerthreadparameters*)malloc(sizeof(listenerthreadparameters));
+					new_connection->tempsock = sockfd;
+					new_connection->contactpos = numdecontatos;
+					
+					if(pthread_create(&pokedthread, NULL, clientpoke, (void*) new_connection) < 0 )
+						perror("Erro, thread ouvinte nao criada");
+					
 					printf("Digite o apelido para o host de IP %s\n", hostslist[numdecontatos].hostip);
 					__fpurge(stdin);
 					fgets(hostslist[numdecontatos].hostname, 50, stdin);
@@ -209,13 +251,34 @@ void clientfunc(){
 }
 
 /*******************************************************************************
+ *	NOME:		serverpoke
+ *	FUNÇÃO:		Thread que cutuca o cliente para saber o status da conexao.
+ * 
+ *	RETORNO:	void
+ *******************************************************************************/
+ void *serverpoke(void *socket) {
+		
+	printf("Criado serverpoke");
+	int sock = *(int*) socket;
+	struct timeval tv;
+	
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+	
+	setsockopt( sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(struct timeval) );	
+	while(send(sock, "c", 1, 0) > 0){printf("Estou pokeando\n");}
+	
+	close(sock);		
+ }
+	 
+
+
+/*******************************************************************************
  *	NOME:		serverlistener
  *	FUNÇÃO:		Thread que recebe as mensagens daqueles que tiverem conectados a
  * 				este pc como servidor
  *	RETORNO:	void
  *******************************************************************************/
-
-
 void *serverlistener(void *conn_data)
 {
 	listenerthreadparameters connection_descriptor = *(listenerthreadparameters*)conn_data;
@@ -255,7 +318,7 @@ void *serverlistener(void *conn_data)
 void serverfunc(){
 	
 	char str[100];
-	int listen_fd, comm_fd;
+	int listen_fd, comm_fd, *new_sock;
 	
 	listenerthreadparameters *new_connection;
 
@@ -294,8 +357,19 @@ void serverfunc(){
 		
 		if(pthread_create(&listenerthread, NULL, serverlistener, (void*) new_connection) < 0 )
 			perror("Erro, thread ouvinte nao criada");
+		//listener criado
 		
-	}//listener criado
+		
+		//cria a thread para que o cliente saiba se o servidor desconectou	
+		pthread_t pokerthread;
+		new_sock = malloc(1);
+		*new_sock = comm_fd;
+		
+		if(pthread_create(&pokerthread, NULL, serverpoke, (void*) new_sock) < 0 )
+			perror("Erro, thread de cutucar o cliente nao criada");
+		//thread cutucadora criada
+		
+	}
 	
 	if(comm_fd < 0){
 		printf("Erro ao aceitar conexao no servidor");
@@ -304,6 +378,13 @@ void serverfunc(){
     close(listen_fd);
 }
 
+
+/*******************************************************************************
+ *	NOME:		excludecontacts
+ *	FUNÇÃO:		Funcao para excluir contatos.
+ * 
+ *	RETORNO:	void
+ *******************************************************************************/
 void exclude_contacts(){
 	int i, erro;
 		char option;
@@ -407,7 +488,7 @@ void send_message(){
 		client_send = 1;
 	}
 	else{
-		printf("Contato nao encontrado\n");
+		printf("Contato nao encontrado ou desconectado\n");
 		sem_post(&sem_client);
 	}
 }
