@@ -30,10 +30,10 @@
 typedef struct pcdata {
 		char hostip[16];
 		char hostname[50];
-		int clientserver;	//0 = ele e cliente. 1 = ele e servidor.
+		int exist;				//Para falar se ele existe ou nao.
 	} hostdata;
 
-hostdata hostslist[MAXHOSTS];
+hostdata hostslist[MAXHOSTS+30]; //Taxa de erro e 30 (desconectar e conectar de novo).
 
 typedef struct serveraddrhandler {
 	
@@ -47,6 +47,7 @@ int client_add;       //Variavel para passar a informacao do menu para thread cl
 int client_send;      //variavel para passar informacao do menu para thread cliente para enviar mensagem
 int prog_end;         //verifica se e o fim do programa nas threads cliente e servidor
 int contato;		  //Variavel para passar a informacao de para qual dos clientes do vetor e a mensagem.
+int client_exclude;	  //Variavel para passar informacao do menu para thread cliente sobre excluir um contato.
 
 sem_t 	sem_client;			//Semaforo para esperar o cliente
 
@@ -147,6 +148,7 @@ void clientfunc(){
 					fgets(hostslist[numdecontatos].hostname, 50, stdin);
 					strtok(hostslist[numdecontatos].hostname, "\n"); //Tira o \n no final
 					__fpurge(stdin);
+					hostslist[numdecontatos].exist = 1;
 					numdecontatos++;
 					printf("Dados salvos com sucesso\n\n");
 				}
@@ -178,11 +180,24 @@ void clientfunc(){
     		__fpurge(stdin);
 
     		for(i = 0; i < numdecontatos; i++){
-    			write(sockfd[i], sendline, strlen(sendline)+1);
+    			if(hostslist.exist == 1)
+    				write(sockfd[i], sendline, strlen(sendline)+1);
     		}
 
     		//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
     		client_send = 0;
+
+    		//Acorda a thread menu
+    		sem_post(&sem_client);
+    	}
+    	if(client_exclude == 1){
+
+    		hostslist.exist = 0;
+
+    		close(sockfd[i]);
+
+    		//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
+    		client_exclude = 0;
 
     		//Acorda a thread menu
     		sem_post(&sem_client);
@@ -271,6 +286,50 @@ void serverfunc(){
     close(listen_fd);
 }
 
+void exclude_contacts(){
+	int i, erro;
+		char option;
+		char stringAux[50];
+		printf("Qual contato deseja excluir?\n1 - Endereco IPv4 do contato\n2 - Nome do contato\n");
+		//Se host for o servidor na conexao
+		erro = 1;
+		__fpurge(stdin);
+		option = getchar();
+		if(option == '1'){
+			printf("Digite o endereco IPv4\n");
+			__fpurge(stdin);
+			fgets(stringAux, 16, stdin);
+			for(i = 0; i < numdecontatos; i++){
+				if(strcmp(hostslist[i].hostip, stringAux) == 0){
+					hostslist[i].exist = 0;
+					contato = i;
+					erro = 0;
+					break;
+				}
+			}
+		}
+		else if(option == '2'){
+			printf("Digite o nome\n");
+			__fpurge(stdin);
+			fgets(stringAux, 50, stdin);
+			strtok(stringAux, "\n");
+			for(i = 0; i < numdecontatos; i++){
+				if(strcmp(hostslist[i].hostname, stringAux) == 0){
+					hostslist[i].exist = 0;
+					contato = i;
+					erro = 0;
+					break;
+				}
+			}
+		}
+		if (erro == 0){
+			client_exclude = 1;
+		}
+		else{
+			printf("Contato nao encontrado");
+		}
+}
+
 /*******************************************************************************
  *	NOME:		send_message
  *	FUNÇÃO:		Enviar mensagem. Ela verifica na lista de hosts se o usuario para
@@ -314,7 +373,9 @@ void send_message(){
 		}
 	}
 	if (erro == 0){
-		client_send = 1;
+		if(hostslist[i].exist == 1){
+			client_send = 1;
+		}
 	}
 	else{
 		printf("Contato nao encontrado");
@@ -332,8 +393,10 @@ void list_contacts(){
 	printf("Nome\t\tIP\n");
 	for(i=0; i<numdecontatos; i++)
 	{
-		printf("%s", hostslist[i].hostname);
-		printf("\t\t%s\n", hostslist[i].hostip);
+		if(hostslist[i].exist == 1){
+			printf("%s", hostslist[i].hostname);
+			printf("\t\t%s\n", hostslist[i].hostip);
+		}
 	}
 	printf("\n");
 }
@@ -376,6 +439,7 @@ void menu_handle(){
 
 			case 3:
 				printf("Digite o nome ou IP do contato que deseja excluir");
+				exclude_contacts();
 				break;
 
 			case 4:
