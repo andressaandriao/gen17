@@ -402,53 +402,54 @@ void refresh_messages(){
 	char buffer[100];
 
 	do{
-	printf("Deseja:\n1-Imprimir ultimas mensagens\n2-Imprimir todas as mensagens\n3-Excluir historico completo\n4-Sair\n");
+		printf("Deseja:\n1-Imprimir ultimas mensagens\n2-Imprimir todas as mensagens\n3-Excluir historico completo\n4-Sair\n");
 
-	__fpurge(stdin);
-	option = getchar();
-	__fpurge(stdin);
+		__fpurge(stdin);
+		option = getchar();
+		__fpurge(stdin);
 
-	if(option != '4'){
-		sem_wait(&sem_file);
+		if(option != '4'){
+			sem_wait(&sem_file);
 
-		fseek(chat_log, 0, SEEK_SET);
-		check = fgetc(chat_log);
-		if(check == '0'){
-			printf("Voce nao recebeu nenhuma mensagem. Nao ha nada para imprimir ou excluir. D:\n");
-		}
-		else{
+			fseek(chat_log, 0, SEEK_SET);
+			check = fgetc(chat_log);
+			if(check == '0'){
+				printf("Voce nao recebeu nenhuma mensagem. Nao ha nada para imprimir ou excluir. D:\n");
+			}
+			else{
 
-			if(option == '1'){
-				fread(&pos, sizeof(int), 1, chat_log);
-				fseek(chat_log, pos, SEEK_SET);
-				while(!feof(chat_log)){
-					fread(buffer, sizeof(buffer), 1, chat_log);
-					printf("%s", buffer);
+				if(option == '1'){
+					fread(&pos, sizeof(int), 1, chat_log);
+					fseek(chat_log, pos, SEEK_SET);
+					while(!feof(chat_log)){
+						fread(buffer, sizeof(buffer), 1, chat_log);
+						printf("%s", buffer);
+					}
+					fseek(chat_log, 0, SEEK_END);
+					pos = ftell(chat_log);
+					fseek(chat_log, sizeof(char), SEEK_SET);
+					fwrite(&pos, sizeof(int), 1, chat_log);
 				}
-				fseek(chat_log, 0, SEEK_END);
-				pos = ftell(chat_log);
-				fseek(chat_log, sizeof(char), SEEK_SET);
-				fwrite(&pos, sizeof(int), 1, chat_log);
-			}
-			else if(option == '2'){
-				fread(&pos, sizeof(int), 1, chat_log);
-				while(!feof(chat_log)){
-					fread(buffer, sizeof(buffer), 1, chat_log);
-					printf("%s", buffer);
+				else if(option == '2'){
+					fread(&pos, sizeof(int), 1, chat_log);
+					while(!feof(chat_log)){
+						fread(buffer, sizeof(buffer), 1, chat_log);
+						printf("%s", buffer);
+					}
+					fseek(chat_log, 0, SEEK_END);
+					pos = ftell(chat_log);
+					fseek(chat_log, sizeof(char), SEEK_SET);
+					fwrite(&pos, sizeof(int), 1, chat_log);
 				}
-				fseek(chat_log, 0, SEEK_END);
-				pos = ftell(chat_log);
-				fseek(chat_log, sizeof(char), SEEK_SET);
-				fwrite(&pos, sizeof(int), 1, chat_log);
+				else if(option == '3'){
+					fseek(chat_log, 0, SEEK_SET);
+					fputc('0', chat_log);
+				}
 			}
-			else if(option == '3'){
-				fseek(chat_log, 0, SEEK_SET);
-				fputc('0', chat_log);
-			}
+			sem_post(&sem_file);
 		}
-		sem_post(&sem_file);
-	}
 	}while(option != '4');
+	sem_post(&sem_client);
 }
 
 /*******************************************************************************
@@ -487,7 +488,7 @@ void menu_handle(){
     do{
 
 		__fpurge(stdin);
-		printf("Deseja:\n1-Inserir Contato\n2-Listar Contatos\n3-Excluir Contato\n4-Enviar Mensagem\n5-Mensagem em Grupo\n6-Sair\n");
+		printf("Deseja:\n1-Inserir Contato\n2-Listar Contatos\n3-Excluir Contato\n4-Enviar Mensagem\n5-Mensagem em Grupo\n6-Sair\n7-Acessar Mensagens Recebidas\n");
 		choice[0] = getchar();
 		__fpurge(stdin);
 		choice[1] = '\0';//manter a semantica de atoi (precisa de \0)
@@ -528,6 +529,7 @@ void menu_handle(){
 
 			case 7:
 				refresh_messages();
+				sem_wait(&sem_client);
 				break;
 
 			default:
