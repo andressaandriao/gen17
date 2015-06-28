@@ -414,6 +414,7 @@ void refresh_messages(){
 	char check;		//checa se o arquivo esta vazio ou nao
 	char option;	//lida com o menu
 	char buffer[100];
+	int end;
 
 	do{
 		printf("Deseja:\n1-Imprimir ultimas mensagens\n2-Imprimir todas as mensagens\n3-Excluir historico completo\n4-Sair\n");
@@ -425,6 +426,8 @@ void refresh_messages(){
 		if(option != '4'){
 			sem_wait(&sem_file);
 
+			fseek(chat_log, 0, SEEK_END);
+			end = ftell(chat_log);
 			fseek(chat_log, 0, SEEK_SET);
 
 			//O primeiro caracter do arquivo indica se ele esta vazio ou nao. 0 = vazio, 1 = nao vazio.
@@ -438,7 +441,7 @@ void refresh_messages(){
 					fread(&pos, sizeof(int), 1, chat_log);
 					printf("Posicao no arquivo: %d", pos);
 					fseek(chat_log, pos, SEEK_SET);
-					while(!feof(chat_log)){
+					while(ftell(chat_log) != end){
 						fread(&buffer, sizeof(buffer), 1, chat_log);
 						printf("%s", buffer);
 					}
