@@ -605,6 +605,7 @@ int main(int argc,char **argv){
 	printf("Digite o numero da porta da aplicacao: ");
 	scanf("%d", &PORTA);
 
+	__fpurge(stdin);
 	printf("Digite o seu endereco de IP: ");
 	fgets(filename, 16, stdin);
 	strtok(filename, "\n");
