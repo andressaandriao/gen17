@@ -534,8 +534,10 @@ int main(int argc,char **argv){
 	client_send = 0;
 	numdecontatos = 0;
 
-
 	pthread_t serverthread, clientthread, menuthread;
+
+	printf("Digite o numero da porta da aplicacao: ");
+	scanf("%d", &PORTA);
 
 	init_semaphores();
 	erro = init_threads(&serverthread, &clientthread, &menuthread);
@@ -543,10 +545,6 @@ int main(int argc,char **argv){
 		return 1;
 	}
 	else{
-
-		printf("Digite o numero da porta da aplicacao: ");
-		scanf("%d", &PORTA);
-
 		pthread_join(menuthread, NULL);
 	    pthread_join(clientthread, NULL);
 		return 0;
