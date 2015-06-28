@@ -235,7 +235,7 @@ void *serverlistener(void *conn_data)
 			fputc('1', chat_log);
 		}
 		else{
-			fseek(chat_log, 0, SEEK_END);
+			fseek(chat_log, -1, SEEK_END);
 			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 			fputc('\0', chat_log);
 		}
