@@ -78,15 +78,15 @@ void sendmessage(char *sendline, int sockfd)
 	fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
 	__fpurge(stdin);
 
-	if(recv(sockfd, sendline, 10, 0) == 0){
+	/*if(recv(sockfd, sendline, 10, 0) == 0){
 		printf("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
 	}
 	else{
-		bzero(sendline, 100);
+		bzero(sendline, 100);*/
 
-		if(write(sockfd, sendline, strlen(sendline)+1) == -1){
+		if(write(sockfd, sendline, strlen(sendline)+1) <= 0){
 			perror("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
-		}
+		//}
 	}
 }
 
@@ -237,11 +237,11 @@ void *serverlistener(void *conn_data)
 	char heartbeat[1] = {'1'};
 	int pos = 1+sizeof(int);
 
-	while(send(connection_descriptor.tempsock, "Estou vivo", 10, 0) > 0 && prog_end != 1)
+	/*while(write(connection_descriptor.tempsock, )) > 0 && prog_end != 1)
 	{
-		printf("Passei do send... ");
+		*/printf("Passei do send... ");
 
-		if(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0){
+		while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0){
 			sem_wait(&sem_file);
 		
 			fseek(chat_log, 0, SEEK_SET);
@@ -259,7 +259,7 @@ void *serverlistener(void *conn_data)
 			}
 			sem_post(&sem_file);
 			//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-		}
+		//}
 		sem_post(&sem_file);
 		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 	}
