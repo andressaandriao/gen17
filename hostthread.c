@@ -402,7 +402,7 @@ void refresh_messages(){
 	char buffer[100];
 
 	do{
-	printf("Deseja:\n1-Imprimir ultimas mensagens\n2-Imprimir todas as mensagens\n3-Excluir historico completo\n4-Sair\n")
+	printf("Deseja:\n1-Imprimir ultimas mensagens\n2-Imprimir todas as mensagens\n3-Excluir historico completo\n4-Sair\n");
 
 	__fpurge(stdin);
 	option = getchar();
