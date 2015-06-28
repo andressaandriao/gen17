@@ -70,7 +70,7 @@ void sendmessage(char *sendline, int sockfd)
 {
 	char recvline[1];
 	bzero(recvline, 1);
-	timer = 0;
+	int timer = 0;
 	
 	bzero(sendline, 100);
 
