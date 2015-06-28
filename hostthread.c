@@ -228,7 +228,8 @@ void *serverlistener(void *conn_data)
 	{
 		fseek(chat_log, 0, SEEK_SET);
 		fEmpty = fgetc(chat_log);
-		if(fEmpty == 0){
+		if(fEmpty == '0'){
+			printf("entrei na verificacao de vazio");
 			fwrite(&pos, sizeof(int), 1, chat_log);
 			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 			fseek(chat_log, 0, SEEK_SET);
