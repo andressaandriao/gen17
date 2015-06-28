@@ -362,7 +362,7 @@ void send_message(){
 		__fpurge(stdin);
 		fgets(stringAux, 16, stdin);
 		for(i = 0; i < numdecontatos; i++){
-			if(strcmp(hostslist[i].hostip, stringAux) == 0){
+			if(strcmp(hostslist[i].hostip, stringAux) == 0 && hostslist[i].exist == 1){
 				contato = i;
 				erro = 0;
 				break;
@@ -375,7 +375,7 @@ void send_message(){
 		fgets(stringAux, 50, stdin);
 		strtok(stringAux, "\n");
 		for(i = 0; i < numdecontatos; i++){
-			if(strcmp(hostslist[i].hostname, stringAux) == 0){
+			if(strcmp(hostslist[i].hostname, stringAux) == 0 && hostslist[i].exist == 1){
 				contato = i;
 				erro = 0;
 				break;
@@ -383,12 +383,7 @@ void send_message(){
 		}
 	}
 	if (erro == 0){
-		if(hostslist[i].exist == 1){
-			client_send = 1;
-		}
-		else{
-			sem_post(&sem_client);
-		}
+		client_send = 1;
 	}
 	else{
 		printf("Contato nao encontrado");
