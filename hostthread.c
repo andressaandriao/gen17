@@ -171,7 +171,7 @@ void clientfunc(){
 			//fim tratamento de erros
 			
 			if(erroip == 1)
-				printf("Favor entrar com um endereco IP valido no formato IPv4");
+				printf("Favor entrar com um endereco IP valido no formato IPv4\n");
 			
 			if(erroip == 0)
 			{
@@ -252,7 +252,7 @@ void clientfunc(){
 			//Acorda a thread menu
 			sem_post(&sem_client);
 		}
-    	//Caso for broadcast
+    	//Caso para broadcast
     	if(client_send == 2){
 
     		bzero(sendline, 100);
@@ -260,10 +260,18 @@ void clientfunc(){
     		printf("Digite a mensagem: ");
     		fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
     		__fpurge(stdin);
-
+			
+			printf("Aparecem os contatos listados. Digite y para mandar a mensagem para ele e n para nao mandar.\n");
+			
     		for(i = 0; i < numdecontatos; i++){
-    			if(hostslist[i].exist == 1)
-    				write(sockfd[i], sendline, strlen(sendline)+1);
+    			if(hostslist[i].exist == 1) {
+    				printf("%s  %s  (y/n)? ", hostslist[i].hostname, hostslist[i].hostip);
+    				__fpurge(stdin);
+    				sendtome = getchar();
+    				__fpurge(stdin);
+						if(sendtome == 'y')
+							write(sockfd[i], sendline, strlen(sendline)+1);
+				}
     		}
 
     		//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
@@ -667,6 +675,7 @@ void menu_handle(){
 				break;
 
 			case 5:
+				printf("Para mandar o broadcast, primeiro digite a mensagem e em seguida selecione os contatos para que deseja envia-la\n\n");
 				client_send = 2;
 				sem_wait(&sem_client);
 				break;
