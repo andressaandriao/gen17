@@ -229,12 +229,14 @@ void *serverlistener(void *conn_data)
 		if(fEmpty == '0'){
 			fwrite(&pos, sizeof(int), 1, chat_log);
 			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+			fputc('\0');
 			fseek(chat_log, 0, SEEK_SET);
 			fputc('1', chat_log);
 		}
 		else{
 			fseek(chat_log, 0, SEEK_END);
 			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+			fputc('\0');
 		}
 		sem_post(&sem_file);
 		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
@@ -433,36 +435,31 @@ void refresh_messages(){
 			else{
 
 				if(option == '1'){
-					printf("Entrei no caso 1");
 					fread(&pos, sizeof(int), 1, chat_log);
 					printf("Posicao no arquivo: %d", pos);
 					fseek(chat_log, pos, SEEK_SET);
 					while(!feof(chat_log)){
 						fread(&buffer, sizeof(buffer), 1, chat_log);
-						printf("Entrei no while de leitura");
 						printf("%s", buffer);
 					}
 					fseek(chat_log, 0, SEEK_END);
 					pos = ftell(chat_log);
-					fseek(chat_log, sizeof(char), SEEK_SET);
+					fseek(chat_log, 1, SEEK_SET);
 					fwrite(&pos, sizeof(int), 1, chat_log);
 				}
 				else if(option == '2'){
-					printf("Entrei no caso 2");
 					fread(&pos, sizeof(int), 1, chat_log);
 					printf("Posicao no arquivo: %d", pos);
 					while(!feof(chat_log)){
 						fread(buffer, sizeof(buffer), 1, chat_log);
-						printf("Entrei no while de leitura");
 						printf("%s", buffer);
 					}
 					fseek(chat_log, 0, SEEK_END);
 					pos = ftell(chat_log);
-					fseek(chat_log, sizeof(char), SEEK_SET);
+					fseek(chat_log, 1, SEEK_SET);
 					fwrite(&pos, sizeof(int), 1, chat_log);
 				}
 				else if(option == '3'){
-					printf("Entrei no caso 3");
 					fseek(chat_log, 0, SEEK_SET);
 					fputc('0', chat_log);
 				}
