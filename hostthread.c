@@ -68,6 +68,9 @@ sem_t 	sem_file;			//Semaforo para a regiao critica do arquivo
  *******************************************************************************/
 void sendmessage(char *sendline, int sockfd)
 {
+	char recvline[1];
+	timer = 0;
+	
 	bzero(sendline, 100);
 
 	printf("Digite a mensagem: ");
@@ -75,7 +78,15 @@ void sendmessage(char *sendline, int sockfd)
 	__fpurge(stdin);
 
 	if(write(sockfd, sendline, strlen(sendline)+1) == -1){
-		printf("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
+		perror("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
+	}
+	
+	while(timer < 9999999) {
+		if( recv(sockfd, recvline ,1, MSG_DONTWAIT) < 0) {//tenta ler um echo do servidor, confirmando a mensagem
+			printf("Conexao perdida");
+			break;
+		}
+		timer++;
 	}
 }
 
@@ -211,6 +222,7 @@ void clientfunc(){
    	close(sockfd);
 }
 
+
 /*******************************************************************************
  *	NOME:		serverlistener
  *	FUNÇÃO:		Thread que recebe as mensagens daqueles que tiverem conectados a
@@ -222,10 +234,13 @@ void *serverlistener(void *conn_data)
 	listenerthreadparameters connection_descriptor = *(listenerthreadparameters*)conn_data;
 	char rcv_msg[1001];
 	char fEmpty;
+	char heartbeat[1] = {'1'};
 	int pos = 1+sizeof(int);
 	
 	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0)
 	{
+		write(connection_descriptor.tempsock, heartbeat, 1);
+		
 		sem_wait(&sem_file);
 		fseek(chat_log, 0, SEEK_SET);
 		fEmpty = fgetc(chat_log);
@@ -302,6 +317,12 @@ void serverfunc(){
     close(listen_fd);
 }
 
+/*******************************************************************************
+ *	NOME:		exclude_contacts
+ *	FUNÇÃO:		Exclui contatos na lista de contatos do usuario.
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
 void exclude_contacts(){
 	int i, erro;
 		char option;
@@ -409,6 +430,14 @@ void send_message(){
 		sem_post(&sem_client);
 	}
 }
+
+/*******************************************************************************
+ *	NOME:		refresh_messages
+ *	FUNÇÃO:		Listagem das mensagens. Ajuda a formatar corretamente a escrita
+ *				para tornar a interface mais amigavel ao usuario
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
 
 void refresh_messages(){
 	int pos;		//posicao no arquivo de dados
