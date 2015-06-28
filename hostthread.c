@@ -118,9 +118,9 @@ void clientfunc(){
     char pcip[16];	//16 pq 4*3(max numeros) + 3(pontos) + 1(\n)
 
     int sockfd[MAXHOSTS];
-    char sendline[100];
+    char sendline[100], verifier, verifybuff[4];
     struct sockaddr_in servaddr;
-    int i, added = 0;
+    int i, added = 0, j, k, erroip = 0, ipsegmentvalue, dotcount;
 
     //Continua no loop enquanto menu nao avisar que o programa chegou ao fim atraves da variavel global
     while(prog_end != 1){
@@ -134,65 +134,94 @@ void clientfunc(){
     	if(client_add == 1){
 			//Todas as informacoes estarao na regiao da struct. O servidor tbm as acessa
 			//Por isso e necessario colocar um semaforo.
-			printf("Digite o ip do contato que deseja inserir:\n ");
+			printf("Digite o ip do contato que deseja inserir: ");
 			fgets(pcip, 16, stdin);
-			strtok(pcip, "\n");
-			__fpurge(stdin);
-			for(i = 0; i<numdecontatos; i++){
-				if(strcmp(hostslist[i].hostip,pcip) == 0 && hostslist[i].exist == 1){
-					added = 1;
+			
+			//tratamento de erro de IPs invalidos
+			verifier = pcip[0];//pega o conteúdo inicial de pcip
+			j=0;
+			k=0;
+			while(pcip[k] != '\n')
+			{
+				while(pcip[k] != '.') {
+					verifybuff[j] = pcip[i];
+					j++;
+					k++;
 				}
+				dotcount++;//verifica o numero de pontos na string do ipv4
+				verifybuff[j] = '\0';
+				j=0;
+				ipsegmentvalue = atoi(verifybuff);
+				if(ipsegmentvalue > 255 || ipsegmentvalue < 0)
+					erroip = 1;
 			}
-			if(added == 1){
-				printf("Contato ja existente!\n\n");
-				client_add = 0;
-				sem_post(&sem_client);
-			}
-			else{
-				added = 0;
-				strcpy(hostslist[numdecontatos].hostip, pcip);
-
-				sockfd[numdecontatos] = socket(AF_INET, SOCK_STREAM, 0);
-				
-				if(sockfd[numdecontatos] == -1)//erro
-				{
-					perror("Socket dun goofed");
+			if(dotcount != 3)
+				erroip = 1;
+			//fim tratamento de erros
+			
+			if(erroip == 1)
+				printf("Favor entrar com um endereco IP valido no formato IPv4");
+			
+			if(erroip == 0)
+			{
+				strtok(pcip, "\n");
+				__fpurge(stdin);
+				for(i = 0; i<numdecontatos; i++){
+					if(strcmp(hostslist[i].hostip,pcip) == 0 && hostslist[i].exist == 1){
+						added = 1;
+					}
+				}
+				if(added == 1){
+					printf("Contato ja existente!\n\n");
 					client_add = 0;
 					sem_post(&sem_client);
-					exit(1); //fazer tratamento de erro melhor
 				}
+				else{
+					added = 0;
+					strcpy(hostslist[numdecontatos].hostip, pcip);
 
-				bzero(&servaddr,sizeof(servaddr));
-				servaddr.sin_family=AF_INET;
-				servaddr.sin_port=htons(PORTA);
+					sockfd[numdecontatos] = socket(AF_INET, SOCK_STREAM, 0);
+					
+					if(sockfd[numdecontatos] == -1)//erro
+					{
+						perror("Socket dun goofed");
+						client_add = 0;
+						sem_post(&sem_client);
+						exit(1); //fazer tratamento de erro melhor
+					}
 
-				inet_pton(AF_INET, pcip, &(servaddr.sin_addr));//127.0.0.1 (ip targeting self)
+					bzero(&servaddr,sizeof(servaddr));
+					servaddr.sin_family=AF_INET;
+					servaddr.sin_port=htons(PORTA);
 
-				if(connect(sockfd[numdecontatos], (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
-				{
-					perror("Connect dun goofed");
-					close(sockfd);//closing dedicated socket
-				}
-				else
-				{
-					
-							
-					pthread_t pokedthread;
-					new_connection = (listenerthreadparameters*)malloc(sizeof(listenerthreadparameters));
-					new_connection->tempsock = sockfd[numdecontatos];
-					new_connection->contactpos = numdecontatos;
-					
-					if(pthread_create(&pokedthread, NULL, clientpoke, (void*) new_connection) < 0 )
-						perror("Erro, clientpoke nao criada");
-					
-					printf("Digite o apelido para o host de IP %s\n", hostslist[numdecontatos].hostip);
-					__fpurge(stdin);
-					fgets(hostslist[numdecontatos].hostname, 50, stdin);
-					strtok(hostslist[numdecontatos].hostname, "\n"); //Tira o \n no final
-					__fpurge(stdin);
-					hostslist[numdecontatos].exist = 1;
-					numdecontatos++;
-					printf("Dados salvos com sucesso\n\n");
+					inet_pton(AF_INET, pcip, &(servaddr.sin_addr));//127.0.0.1 (ip targeting self)
+
+					if(connect(sockfd[numdecontatos], (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
+					{
+						perror("Connect dun goofed");
+						close(sockfd);//closing dedicated socket
+					}
+					else
+					{
+						
+								
+						pthread_t pokedthread;
+						new_connection = (listenerthreadparameters*)malloc(sizeof(listenerthreadparameters));
+						new_connection->tempsock = sockfd[numdecontatos];
+						new_connection->contactpos = numdecontatos;
+						
+						if(pthread_create(&pokedthread, NULL, clientpoke, (void*) new_connection) < 0 )
+							perror("Erro, clientpoke nao criada");
+						
+						printf("Digite o apelido para o host de IP %s ", hostslist[numdecontatos].hostip);
+						__fpurge(stdin);
+						fgets(hostslist[numdecontatos].hostname, 50, stdin);
+						strtok(hostslist[numdecontatos].hostname, "\n"); //Tira o \n no final
+						__fpurge(stdin);
+						hostslist[numdecontatos].exist = 1;
+						numdecontatos++;
+						printf("Dados salvos com sucesso\n\n");
+					}
 				}
 				//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
 				//o cliente adicione novo contato.
