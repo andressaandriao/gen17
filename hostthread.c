@@ -229,14 +229,14 @@ void *serverlistener(void *conn_data)
 		if(fEmpty == '0'){
 			fwrite(&pos, sizeof(int), 1, chat_log);
 			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-			fputc('\0');
+			fputc('\0', chat_log);
 			fseek(chat_log, 0, SEEK_SET);
 			fputc('1', chat_log);
 		}
 		else{
 			fseek(chat_log, 0, SEEK_END);
 			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-			fputc('\0');
+			fputc('\0', chat_log);
 		}
 		sem_post(&sem_file);
 		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
