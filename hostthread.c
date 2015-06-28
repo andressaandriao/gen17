@@ -436,8 +436,8 @@ void menu_handle(){
 				break;
 
 			case 3:
-				printf("Digite o nome ou IP do contato que deseja excluir");
 				exclude_contacts();
+				sem_wait(&sem_client);
 				break;
 
 			case 4:
