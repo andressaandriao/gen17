@@ -88,7 +88,7 @@ void sendmessage(char *sendline, int sockfd)
  void *clientpoke(void *contactinfo) {
 	
 	listenerthreadparameters serverparameters = *(listenerthreadparameters*) contactinfo;
-	char buffer[2];	
+	char buffer[2];
 	struct timeval tv;
 	
 	tv.tv_sec = 5;
@@ -98,7 +98,6 @@ void sendmessage(char *sendline, int sockfd)
 	while(recv(serverparameters.tempsock, buffer, 1, 0) > 0){/*printf("Recebi um pokemon\n");*/}
 	
 	hostslist[serverparameters.contactpos].exist = 0;
-	printf("Encerrando clientpoke, veja se eu exclui o contato plz\n");
 	
 	
 	close(serverparameters.tempsock);		
@@ -257,7 +256,7 @@ void clientfunc(){
  *******************************************************************************/
  void *serverpoke(void *socket) {
 		
-	printf("Criado serverpoke");
+	//printf("Criado serverpoke");
 	int sock = *(int*) socket;
 	struct timeval tv;
 	
