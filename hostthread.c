@@ -74,7 +74,7 @@ void sendmessage(char *sendline, int sockfd)
 	fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
 	__fpurge(stdin);
 
-	if(recv(sendline, sizeof(sendline), MSG_PEEK | MSG_DONTWAIT) == 0){
+	if(recv(sockfd, sendline, 10, 0) == 0){
 		printf("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
 	}
 	else{
@@ -231,27 +231,29 @@ void *serverlistener(void *conn_data)
 	char fEmpty;
 	int pos = 1+sizeof(int);
 	
-	write(connection_descriptor.tempsock, "oi", 3);
+	//write(connection_descriptor.tempsock, "Estou vivo", 10);
 
-	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 && prog_end != 1)
+	send(connection_descriptor.tempsock, "Estou vivo", 10, 0)
+
+	while(send(connection_descriptor.tempsock, "Estou vivo", 10, 0) > 0 && prog_end != 1)
 	{
-		sem_wait(&sem_file);
-		fseek(chat_log, 0, SEEK_SET);
-		fEmpty = fgetc(chat_log);
-		if(fEmpty == '0'){
-			fwrite(&pos, sizeof(int), 1, chat_log);
-			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+		if(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0){
+			sem_wait(&sem_file);
 			fseek(chat_log, 0, SEEK_SET);
-			fputc('1', chat_log);
+			fEmpty = fgetc(chat_log);
+			if(fEmpty == '0'){
+				fwrite(&pos, sizeof(int), 1, chat_log);
+				fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+				fseek(chat_log, 0, SEEK_SET);
+				fputc('1', chat_log);
+			}
+			else{
+				fseek(chat_log, 0, SEEK_END);
+				fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+			}
+			sem_post(&sem_file);
+			//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 		}
-		else{
-			fseek(chat_log, 0, SEEK_END);
-			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-		}
-		sem_post(&sem_file);
-		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-
-		write(connection_descriptor.tempsock, "oi", 3);
 	}
 	close(connection_descriptor.tempsock);
 }
