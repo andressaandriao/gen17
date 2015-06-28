@@ -226,10 +226,10 @@ void *serverlistener(void *conn_data)
 	
 	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 )
 	{
+		sem_wait(&sem_file);
 		fseek(chat_log, 0, SEEK_SET);
 		fEmpty = fgetc(chat_log);
 		if(fEmpty == '0'){
-			printf("entrei na verificacao de vazio");
 			fwrite(&pos, sizeof(int), 1, chat_log);
 			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 			fseek(chat_log, 0, SEEK_SET);
@@ -239,6 +239,7 @@ void *serverlistener(void *conn_data)
 			fseek(chat_log, 0, SEEK_END);
 			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 		}
+		sem_post(&sem_file);
 		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 	}
 }
@@ -426,6 +427,8 @@ void refresh_messages(){
 			sem_wait(&sem_file);
 
 			fseek(chat_log, 0, SEEK_SET);
+
+			//O primeiro caracter do arquivo indica se ele esta vazio ou nao. 0 = vazio, 1 = nao vazio.
 			check = fgetc(chat_log);
 			if(check == '0'){
 				printf("Voce nao recebeu nenhuma mensagem. Nao ha nada para imprimir ou excluir. D:\n");
@@ -435,8 +438,7 @@ void refresh_messages(){
 				if(option == '1'){
 					fread(&pos, sizeof(int), 1, chat_log);
 					fseek(chat_log, pos, SEEK_SET);
-					while(!feof(chat_log)){
-						fread(buffer, sizeof(buffer), 1, chat_log);
+					while(fread(buffer, sizeof(buffer), 1, chat_log)){
 						printf("%s", buffer);
 					}
 					fseek(chat_log, 0, SEEK_END);
@@ -446,8 +448,7 @@ void refresh_messages(){
 				}
 				else if(option == '2'){
 					fread(&pos, sizeof(int), 1, chat_log);
-					while(!feof(chat_log)){
-						fread(buffer, sizeof(buffer), 1, chat_log);
+					while(fread(buffer, sizeof(buffer), 1, chat_log)){
 						printf("%s", buffer);
 					}
 					fseek(chat_log, 0, SEEK_END);
