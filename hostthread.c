@@ -74,8 +74,15 @@ void sendmessage(char *sendline, int sockfd)
 	fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
 	__fpurge(stdin);
 
-	if(write(sockfd, sendline, strlen(sendline)+1) == -1){
+	if(recv(sendline, sizeof(sendline), MSG_PEEK | MSG_DONTWAIT) == 0){
 		printf("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
+	}
+	else{
+		bzero(sendline, 100);
+
+		if(write(sockfd, sendline, strlen(sendline)+1) == -1){
+			printf("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
+		}
 	}
 }
 
@@ -224,7 +231,9 @@ void *serverlistener(void *conn_data)
 	char fEmpty;
 	int pos = 1+sizeof(int);
 	
-	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0)
+	write(connection_descriptor.tempsock, "oi", 3);
+
+	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 && prog_end != 1)
 	{
 		sem_wait(&sem_file);
 		fseek(chat_log, 0, SEEK_SET);
@@ -241,7 +250,10 @@ void *serverlistener(void *conn_data)
 		}
 		sem_post(&sem_file);
 		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+
+		write(connection_descriptor.tempsock, "oi", 3);
 	}
+	close(connection_descriptor.tempsock);
 }
 
 /*******************************************************************************
@@ -282,7 +294,7 @@ void serverfunc(){
 	listen(listen_fd, MAXHOSTS);
 
 	int clientaddrlen = sizeof(struct sockaddr_in);
-	while( comm_fd = accept(listen_fd, (struct sockaddr*) &clientaddr, (socklen_t*)&clientaddrlen) )
+	while( comm_fd = accept(listen_fd, (struct sockaddr*) &clientaddr, (socklen_t*)&clientaddrlen) && prog_end != 1)
 	{
 		//conexao aceita, criando listener
 		pthread_t listenerthread;
@@ -290,8 +302,9 @@ void serverfunc(){
 		new_connection->tempsock = comm_fd;
 		strcpy( new_connection->chat_ip, inet_ntoa(clientaddr.sin_addr) );
 		
-		if(pthread_create(&listenerthread, NULL, serverlistener, (void*) new_connection) < 0 )
+		if(pthread_create(&listenerthread, NULL, serverlistener, (void*) new_connection) < 0 ){
 			perror("Erro, thread ouvinte nao criada");
+		}
 		
 	}//listener criado
 	
