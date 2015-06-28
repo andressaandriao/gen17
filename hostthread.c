@@ -87,7 +87,6 @@ void sendmessage(char *sendline, int sockfd)
  *******************************************************************************/
  void *clientpoke(void *contactinfo) {
 	
-	printf("Clientpoke criada\n");
 	listenerthreadparameters serverparameters = *(listenerthreadparameters*) contactinfo;
 	char buffer[2];	
 	struct timeval tv;
@@ -96,7 +95,7 @@ void sendmessage(char *sendline, int sockfd)
 	tv.tv_usec = 0;
 	
 	setsockopt( serverparameters.tempsock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval) );	
-	while(recv(serverparameters.tempsock, buffer, 1, 0) > 0){printf("Recebi um pokemon\n");}
+	while(recv(serverparameters.tempsock, buffer, 1, 0) > 0){/*printf("Recebi um pokemon\n");*/}
 	
 	hostslist[serverparameters.contactpos].exist = 0;
 	printf("Encerrando clientpoke, veja se eu exclui o contato plz\n");
@@ -185,7 +184,7 @@ void clientfunc(){
 					new_connection->contactpos = numdecontatos;
 					
 					if(pthread_create(&pokedthread, NULL, clientpoke, (void*) new_connection) < 0 )
-						perror("Erro, thread ouvinte nao criada");
+						perror("Erro, clientpoke nao criada");
 					
 					printf("Digite o apelido para o host de IP %s\n", hostslist[numdecontatos].hostip);
 					__fpurge(stdin);
@@ -266,7 +265,7 @@ void clientfunc(){
 	tv.tv_usec = 0;
 	
 	setsockopt( sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(struct timeval) );	
-	while(send(sock, "c", 1, 0) > 0){printf("Estou pokeando\n");}
+	while(send(sock, "c", 1, 0) > 0){/*printf("Estou pokeando\n");*/}
 	
 	close(sock);		
  }
