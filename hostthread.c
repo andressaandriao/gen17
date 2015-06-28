@@ -439,11 +439,15 @@ void refresh_messages(){
 
 				if(option == '1'){
 					fread(&pos, sizeof(int), 1, chat_log);
-					printf("Posicao no arquivo: %d", pos);
 					fseek(chat_log, pos, SEEK_SET);
-					while(ftell(chat_log) != end){
-						fread(&buffer, sizeof(buffer), 1, chat_log);
-						printf("%s", buffer);
+					if(ftell(chat_log) == end){
+						printf("Voce nao tem nenhuma nova mensagem\n");
+					}
+					else{
+						while(ftell(chat_log) != end){
+							fread(&buffer, sizeof(buffer), 1, chat_log);
+							printf("%s", buffer);
+						}
 					}
 					fseek(chat_log, 0, SEEK_END);
 					pos = ftell(chat_log);
@@ -452,7 +456,6 @@ void refresh_messages(){
 				}
 				else if(option == '2'){
 					fread(&pos, sizeof(int), 1, chat_log);
-					printf("Posicao no arquivo: %d", pos);
 					while(!feof(chat_log)){
 						fread(buffer, sizeof(buffer), 1, chat_log);
 						printf("%s", buffer);
