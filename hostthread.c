@@ -180,7 +180,7 @@ void clientfunc(){
     		__fpurge(stdin);
 
     		for(i = 0; i < numdecontatos; i++){
-    			if(hostslist.exist == 1)
+    			if(hostslist[i].exist == 1)
     				write(sockfd[i], sendline, strlen(sendline)+1);
     		}
 
@@ -191,8 +191,6 @@ void clientfunc(){
     		sem_post(&sem_client);
     	}
     	if(client_exclude == 1){
-
-    		hostslist.exist = 0;
 
     		close(sockfd[i]);
 
