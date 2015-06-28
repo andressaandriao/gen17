@@ -423,7 +423,7 @@ void refresh_messages(){
 				fseek(chat_log, pos, SEEK_SET);
 				while(!feof(chat_log)){
 					fread(buffer, sizeof(buffer), 1, chat_log);
-					puts("%s", buffer);
+					printf("%s", buffer);
 				}
 				fseek(chat_log, 0, SEEK_END);
 				pos = ftell(chat_log);
