@@ -296,6 +296,7 @@ void clientfunc(){
    	close(sockfd);
 }
 
+
 /*******************************************************************************
  *	NOME:		serverpoke
  *	FUNÇÃO:		Thread que cutuca o cliente para saber o status da conexao.
@@ -354,6 +355,7 @@ void *serverlistener(void *conn_data)
 		bzero(rcv_msg, 1001);
 	}
 }
+
 
 /*******************************************************************************
  *	NOME:		serverfunc
@@ -482,6 +484,7 @@ void exclude_contacts(){
 		}
 }
 
+
 /*******************************************************************************
  *	NOME:		send_message
  *	FUNÇÃO:		Enviar mensagem. Ela verifica na lista de hosts se o usuario para
@@ -539,6 +542,15 @@ void send_message(){
 	}
 }
 
+
+/*******************************************************************************
+ *	NOME:		refresh_messages
+ *	FUNÇÃO:		Cuida da mostra de mensagens. Melhora formatacao da exibicao.
+ *				Utiliza arquivos para guardar as mensagens recebidas e mostra
+ * 				elas sob demanda
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
 void refresh_messages(){
 	int pos;		//posicao no arquivo de dados
 	char check;		//checa se o arquivo esta vazio ou nao
@@ -608,6 +620,7 @@ void refresh_messages(){
 	sem_post(&sem_client);
 }
 
+
 /*******************************************************************************
  *	NOME:		list_contacts
  *	FUNÇÃO:		Lista os contatos
@@ -626,6 +639,7 @@ void list_contacts(){
 	}
 	printf("\n");
 }
+
 
 /*******************************************************************************
  *	NOME:		clientfunc
@@ -699,6 +713,7 @@ void menu_handle(){
     prog_end = 1;
 }
 
+
 /*******************************************************************************
  *	NOME:		init_semaphores
  *	FUNÇÃO:		Inicia os semaforos
@@ -709,6 +724,7 @@ void init_semaphores() {
 	sem_init(&sem_client, 0, 0);
 	sem_init(&sem_file, 0, 1);
 }
+
 
 /*******************************************************************************
  *	NOME:		init_threads
@@ -738,6 +754,7 @@ int init_threads(pthread_t *serverthread, pthread_t *clientthread, pthread_t *me
 
 	return 0;
 }
+
 
 /*******************************************************************************
  *	NOME:		main
