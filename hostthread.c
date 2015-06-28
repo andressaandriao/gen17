@@ -5,9 +5,6 @@
  * 
  */
 
-//OBS: SERA NECESSARIA UMA VARIAVEL PARA PASSAR DO MENU PARA AS THREADS 
-//A INFORMACAO DE QUAL IP OU USUARIO E. DA PARA SER DA MESMA MANEIRA QUE AS VARIAVEIS QUE O MENU ATIVA.
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -436,7 +433,9 @@ void refresh_messages(){
 			else{
 
 				if(option == '1'){
+					printf("Entrei no caso 1");
 					fread(&pos, sizeof(int), 1, chat_log);
+					printf("Posicao no arquivo: %d", pos);
 					fseek(chat_log, pos, SEEK_SET);
 					while(fread(buffer, sizeof(buffer), 1, chat_log)){
 						printf("%s", buffer);
@@ -447,7 +446,9 @@ void refresh_messages(){
 					fwrite(&pos, sizeof(int), 1, chat_log);
 				}
 				else if(option == '2'){
+					printf("Entrei no caso 2");
 					fread(&pos, sizeof(int), 1, chat_log);
+					printf("Posicao no arquivo: %d", pos);
 					while(fread(buffer, sizeof(buffer), 1, chat_log)){
 						printf("%s", buffer);
 					}
@@ -457,6 +458,7 @@ void refresh_messages(){
 					fwrite(&pos, sizeof(int), 1, chat_log);
 				}
 				else if(option == '3'){
+					printf("Entrei no caso 3");
 					fseek(chat_log, 0, SEEK_SET);
 					fputc('0', chat_log);
 				}
