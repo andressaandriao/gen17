@@ -533,6 +533,7 @@ void refresh_messages(){
 					}
 					fseek(chat_log, 0, SEEK_END);
 					pos = ftell(chat_log);
+					pos--;	//Volta para o ultimo caracter que e um \0. 
 					fseek(chat_log, 1, SEEK_SET);
 					fwrite(&pos, sizeof(int), 1, chat_log);
 				}
@@ -544,6 +545,7 @@ void refresh_messages(){
 					}while(ftell(chat_log) != end);
 					fseek(chat_log, 0, SEEK_END);
 					pos = ftell(chat_log);
+					pos--; //Volta para o ultimo caracter que e um \0. 
 					fseek(chat_log, 1, SEEK_SET);
 					fwrite(&pos, sizeof(int), 1, chat_log);
 				}
