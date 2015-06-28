@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#define PORTA 7700
+#define PORTA 7620
 #define MAXHOSTS 20
 
 //Variaveis globais//////////
@@ -257,7 +257,6 @@ void serverfunc(){
 	servaddr.sin_port = htons(PORTA);
 
 	if(bind(listen_fd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0){
-		printf("%s ", inet_ntoa(servaddr.sin_addr));
 		perror("Houve erro no bind");
 	}
 
@@ -292,7 +291,13 @@ void exclude_contacts(){
 		//Se host for o servidor na conexao
 		erro = 1;
 		__fpurge(stdin);
-		option = getchar();
+		do{
+			__fpurge(stdin);
+			option = getchar();
+			if(option != '1' && option != '2')
+				printf("Voce digitou uma opcao invalida. Tente:\n1 - Endereco IPv4 do contato\n2 - Nome do contato\n");
+		}while(option != '1' && option != '2');
+
 		if(option == '1'){
 			printf("Digite o endereco IPv4\n");
 			__fpurge(stdin);
@@ -325,6 +330,7 @@ void exclude_contacts(){
 		}
 		else{
 			printf("Contato nao encontrado");
+			sem_post(&sem_client);
 		}
 }
 
@@ -343,8 +349,14 @@ void send_message(){
 	printf("Para quem gostaria de mandar a mensagem?\n1 - Endereco IPv4 do destinatario\n2 - Nome do destinatario\n");
 	//Se host for o servidor na conexao
 	erro = 1;
-	__fpurge(stdin);
-	option = getchar();
+
+	do{
+		__fpurge(stdin);
+		option = getchar();
+		if(option != '1' && option != '2')
+			printf("Voce digitou uma opcao invalida. Tente:\n1 - Endereco IPv4 do contato\n2 - Nome do contato\n");
+	}while(option != '1' && option != '2');
+
 	if(option == '1'){
 		printf("Digite o endereco IPv4\n");
 		__fpurge(stdin);
@@ -377,6 +389,7 @@ void send_message(){
 	}
 	else{
 		printf("Contato nao encontrado");
+		sem_post(&sem_client);
 	}
 }
 
