@@ -437,7 +437,8 @@ void refresh_messages(){
 					fread(&pos, sizeof(int), 1, chat_log);
 					printf("Posicao no arquivo: %d", pos);
 					fseek(chat_log, pos, SEEK_SET);
-					while(fread(buffer, sizeof(buffer), 1, chat_log)){
+					while(fread(&buffer, sizeof(buffer), 1, chat_log)){
+						printf("Entrei no while de leitura");
 						printf("%s", buffer);
 					}
 					fseek(chat_log, 0, SEEK_END);
@@ -450,6 +451,7 @@ void refresh_messages(){
 					fread(&pos, sizeof(int), 1, chat_log);
 					printf("Posicao no arquivo: %d", pos);
 					while(fread(buffer, sizeof(buffer), 1, chat_log)){
+						printf("Entrei no while de leitura");
 						printf("%s", buffer);
 					}
 					fseek(chat_log, 0, SEEK_END);
