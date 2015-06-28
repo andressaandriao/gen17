@@ -598,13 +598,22 @@ int main(int argc,char **argv){
 	client_add = 0;
 	client_send = 0;
 	numdecontatos = 0;
+	char filename[25];
 
 	pthread_t serverthread, clientthread, menuthread;
 
 	printf("Digite o numero da porta da aplicacao: ");
 	scanf("%d", &PORTA);
 
-	chat_log = fopen("chat.txt", "w+b");
+	printf("Digite o seu endereco de IP: ");
+	fgets(filename, 16, stdin);
+	strtok(filename, "\n");
+	__fpurge(stdin);
+
+	strcat(filename, "chat.txt");
+
+
+	chat_log = fopen(filename, "w+b");
 
 	if(chat_log == NULL){
 		printf("Erro na abertura do arquivo");
