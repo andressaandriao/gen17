@@ -522,7 +522,7 @@ void refresh_messages(){
 				if(option == '1'){
 					fread(&pos, sizeof(int), 1, chat_log);
 					fseek(chat_log, pos, SEEK_SET);
-					if(ftell(chat_log) == (end-1)){
+					if(ftell(chat_log) == end && ftell(chat_log) == (end-1)){
 						printf("Voce nao tem nenhuma nova mensagem\n");
 					}
 					else{
