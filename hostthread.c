@@ -48,8 +48,11 @@ int prog_end;         //verifica se e o fim do programa nas threads cliente e se
 int contato;		  //Variavel para passar a informacao de para qual dos clientes do vetor e a mensagem.
 int client_exclude;	  //Variavel para passar informacao do menu para thread cliente sobre excluir um contato.
 int PORTA;			  //Variavel para a porta utilizada
+FILE *chat_log;		  //Arquivo que guarda as mensagens enquanto o usuario nao voltou para o menu principal.
+					  //Quando ele voltar para o menu principal, as mensagens sao printadas na tela.
 
 sem_t 	sem_client;			//Semaforo para esperar o cliente
+sem_t 	sem_file;			//Semaforo para a regiao critica do arquivo
 
 //fim variaveris globais//////
 
@@ -197,6 +200,8 @@ void clientfunc(){
     		//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
     		client_exclude = 0;
 
+    		printf("Contato excluido com sucesso\n");
+
     		//Acorda a thread menu
     		sem_post(&sem_client);
     	}
@@ -217,12 +222,11 @@ void *serverlistener(void *conn_data)
 	listenerthreadparameters connection_descriptor = *(listenerthreadparameters*)conn_data;
 	char rcv_msg[1001];
 	
-	while( recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 )
+	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 )
 	{
-		printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-	
+		fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 	}
-	
 }
 
 /*******************************************************************************
@@ -271,7 +275,7 @@ void serverfunc(){
 		new_connection->tempsock = comm_fd;
 		strcpy( new_connection->chat_ip, inet_ntoa(clientaddr.sin_addr) );
 		
-		if( pthread_create(&listenerthread, NULL, serverlistener, (void*) new_connection) < 0 )
+		if(pthread_create(&listenerthread, NULL, serverlistener, (void*) new_connection) < 0 )
 			perror("Erro, thread ouvinte nao criada");
 		
 	}//listener criado
@@ -329,7 +333,7 @@ void exclude_contacts(){
 			client_exclude = 1;
 		}
 		else{
-			printf("Contato nao encontrado");
+			printf("Contato nao encontrado\n");
 			sem_post(&sem_client);
 		}
 }
@@ -386,9 +390,65 @@ void send_message(){
 		client_send = 1;
 	}
 	else{
-		printf("Contato nao encontrado");
+		printf("Contato nao encontrado\n");
 		sem_post(&sem_client);
 	}
+}
+
+void refresh_messages(){
+	int pos;		//posicao no arquivo de dados
+	char check;		//checa se o arquivo esta vazio ou nao
+	char option;	//lida com o menu
+	char buffer[100];
+
+	do{
+	printf("Deseja:\n1-Imprimir ultimas mensagens\n2-Imprimir todas as mensagens\n3-Excluir historico completo\n4-Sair\n")
+
+	__fpurge(stdin);
+	option = getchar();
+	__fpurge(stdin);
+
+	if(option != '4'){
+		sem_wait(&sem_file);
+
+		fseek(chat_log, 0, SEEK_SET);
+		check = fgetc(chat_log);
+		if(check == '0'){
+			printf("Voce nao recebeu nenhuma mensagem. Nao ha nada para imprimir ou excluir. D:\n");
+		}
+		else{
+
+			if(option == '1'){
+				fread(&pos, sizeof(int), 1, chat_log);
+				fseek(chat_log, pos, SEEK_SET);
+				while(!feof(chat_log)){
+					fread(buffer, sizeof(buffer), 1, chat_log);
+					puts("%s", buffer);
+				}
+				fseek(chat_log, 0, SEEK_END);
+				pos = ftell(chat_log);
+				fseek(chat_log, sizeof(char), SEEK_SET);
+				fwrite(&pos, sizeof(int), 1, chat_log);
+			}
+			else if(option == '2'){
+				fread(&pos, sizeof(int), 1, chat_log);
+				while(!feof(chat_log)){
+					fread(buffer, sizeof(buffer), 1, chat_log);
+					printf("%s", buffer);
+				}
+				fseek(chat_log, 0, SEEK_END);
+				pos = ftell(chat_log);
+				fseek(chat_log, sizeof(char), SEEK_SET);
+				fwrite(&pos, sizeof(int), 1, chat_log);
+			}
+			else if(option == '3'){
+				fseek(chat_log, 0, SEEK_SET);
+				fputc('0', chat_log);
+			}
+		}
+		sem_post(&sem_file);
+	}
+	}while(option != '4');
 }
 
 /*******************************************************************************
@@ -466,6 +526,10 @@ void menu_handle(){
 				printf("Adeus!\n");
 				break;
 
+			case 7:
+				refresh_messages();
+				break;
+
 			default:
 				printf("Escolha invalida\n\n");
 				break;
@@ -484,6 +548,7 @@ void menu_handle(){
  *******************************************************************************/
 void init_semaphores() {
 	sem_init(&sem_client, 0, 0);
+	sem_init(&sem_file, 0, 1);
 }
 
 /*******************************************************************************
@@ -536,6 +601,15 @@ int main(int argc,char **argv){
 
 	printf("Digite o numero da porta da aplicacao: ");
 	scanf("%d", &PORTA);
+
+	chat_log = fopen("chat.txt", "w+b");
+
+	if(chat_log == NULL){
+		printf("Erro na abertura do arquivo");
+	}
+	else{
+		fputc('0', chat_log);
+	}
 
 	init_semaphores();
 	erro = init_threads(&serverthread, &clientthread, &menuthread);
