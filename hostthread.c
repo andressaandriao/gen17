@@ -68,6 +68,10 @@ sem_t 	sem_file;			//Semaforo para a regiao critica do arquivo
  *******************************************************************************/
 void sendmessage(char *sendline, int sockfd)
 {
+	char recvline[1];
+	bzero(recvline, 1);
+	int timer = 0;
+	
 	bzero(sendline, 100);
 
 	printf("Digite a mensagem: ");
@@ -81,8 +85,7 @@ void sendmessage(char *sendline, int sockfd)
 		bzero(sendline, 100);
 
 		if(write(sockfd, sendline, strlen(sendline)+1) == -1){
-			printf("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
-		}
+			perror("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
 	}
 }
 
@@ -218,6 +221,7 @@ void clientfunc(){
    	close(sockfd);
 }
 
+
 /*******************************************************************************
  *	NOME:		serverlistener
  *	FUNÇÃO:		Thread que recebe as mensagens daqueles que tiverem conectados a
@@ -229,19 +233,20 @@ void *serverlistener(void *conn_data)
 	listenerthreadparameters connection_descriptor = *(listenerthreadparameters*)conn_data;
 	char rcv_msg[1001];
 	char fEmpty;
+	char heartbeat[1] = {'1'};
 	int pos = 1+sizeof(int);
-	
-	//write(connection_descriptor.tempsock, "Estou vivo", 10);
-
-	send(connection_descriptor.tempsock, "Estou vivo", 10, 0)
 
 	while(send(connection_descriptor.tempsock, "Estou vivo", 10, 0) > 0 && prog_end != 1)
 	{
+		printf("Passei do send... ");
+
 		if(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0){
 			sem_wait(&sem_file);
+		
 			fseek(chat_log, 0, SEEK_SET);
 			fEmpty = fgetc(chat_log);
 			if(fEmpty == '0'){
+				printf("CHEGUEI AQUI");
 				fwrite(&pos, sizeof(int), 1, chat_log);
 				fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 				fseek(chat_log, 0, SEEK_SET);
@@ -254,6 +259,8 @@ void *serverlistener(void *conn_data)
 			sem_post(&sem_file);
 			//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 		}
+		sem_post(&sem_file);
+		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 	}
 	close(connection_descriptor.tempsock);
 }
@@ -317,6 +324,12 @@ void serverfunc(){
     close(listen_fd);
 }
 
+/*******************************************************************************
+ *	NOME:		exclude_contacts
+ *	FUNÇÃO:		Exclui contatos na lista de contatos do usuario.
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
 void exclude_contacts(){
 	int i, erro;
 		char option;
@@ -424,6 +437,14 @@ void send_message(){
 		sem_post(&sem_client);
 	}
 }
+
+/*******************************************************************************
+ *	NOME:		refresh_messages
+ *	FUNÇÃO:		Listagem das mensagens. Ajuda a formatar corretamente a escrita
+ *				para tornar a interface mais amigavel ao usuario
+ *
+ *	RETORNO:	void
+ *******************************************************************************/
 
 void refresh_messages(){
 	int pos;		//posicao no arquivo de dados
