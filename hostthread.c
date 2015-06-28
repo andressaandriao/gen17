@@ -288,8 +288,8 @@ void serverfunc(){
 		perror("Erro na criacao do socket");
 	}
 
-	int enable = 1;
-	if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int) < 0))
+	//int enable = 1;
+	//if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int) < 0))
 		//printf("setsockopt(SO_REUSEADDR) failed");
 
 	bzero(&servaddr, sizeof(servaddr));
@@ -307,6 +307,8 @@ void serverfunc(){
 	int clientaddrlen = sizeof(struct sockaddr_in);
 	while( comm_fd = accept(listen_fd, (struct sockaddr*) &clientaddr, (socklen_t*)&clientaddrlen) && prog_end != 1)
 	{
+		printf("Conexao aceita");
+
 		//conexao aceita, criando listener
 		pthread_t listenerthread;
 		new_connection = (listenerthreadparameters*)malloc(sizeof(listenerthreadparameters));
