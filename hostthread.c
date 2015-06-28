@@ -102,7 +102,7 @@ void sendmessage(char *sendline, int sockfd)
 	printf("Encerrando clientpoke, veja se eu exclui o contato plz\n");
 	
 	
-	close(sock);		
+	close(serverparameters.tempsock);		
  }
 
 
@@ -181,7 +181,7 @@ void clientfunc(){
 							
 					pthread_t pokedthread;
 					new_connection = (listenerthreadparameters*)malloc(sizeof(listenerthreadparameters));
-					new_connection->tempsock = sockfd;
+					new_connection->tempsock = sockfd[numdecontatos];
 					new_connection->contactpos = numdecontatos;
 					
 					if(pthread_create(&pokedthread, NULL, clientpoke, (void*) new_connection) < 0 )
