@@ -241,26 +241,26 @@ void *serverlistener(void *conn_data)
 	{
 		printf("Passei do send... ");*/
 
-		while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0){
-			//sem_wait(&sem_file);
-		
+	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 && prog_end != 1){
+		//sem_wait(&sem_file);
+
+		/*fseek(chat_log, 0, SEEK_SET);
+		fEmpty = fgetc(chat_log);
+		if(fEmpty == '0'){
+			printf("CHEGUEI AQUI");
+			fwrite(&pos, sizeof(int), 1, chat_log);
+			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 			fseek(chat_log, 0, SEEK_SET);
-			fEmpty = fgetc(chat_log);
-			if(fEmpty == '0'){
-				printf("CHEGUEI AQUI");
-				fwrite(&pos, sizeof(int), 1, chat_log);
-				fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-				fseek(chat_log, 0, SEEK_SET);
-				fputc('1', chat_log);
-			}
-			else{
-				fseek(chat_log, 0, SEEK_END);
-				fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-			}
+			fputc('1', chat_log);
+		}
+		else{
+			fseek(chat_log, 0, SEEK_END);
+			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+		}*/
 			//sem_post(&sem_file);
 			//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 		//}
-		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+		printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 	}
 	close(connection_descriptor.tempsock);
 }
