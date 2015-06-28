@@ -71,7 +71,9 @@ void sendmessage(char *sendline, int sockfd)
 	fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
 	__fpurge(stdin);
 
-	write(sockfd, sendline, strlen(sendline)+1);
+	if(write(sockfd, sendline, strlen(sendline)+1) <= 0){
+		perror("Mensagem nao enviada");
+	}
 }
 
 /*******************************************************************************
