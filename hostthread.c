@@ -220,6 +220,7 @@ void *serverlistener(void *conn_data)
 	char rcv_msg[1001];
 	char fEmpty;
 	int pos = 1+sizeof(int);
+	bzero(rcv_msg, 1001);
 	
 	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 )
 	{
@@ -239,7 +240,7 @@ void *serverlistener(void *conn_data)
 			fputc('\0', chat_log);
 		}
 		sem_post(&sem_file);
-		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
+		bzero(rcv_msg, 1001);
 	}
 }
 
@@ -456,7 +457,7 @@ void refresh_messages(){
 				}
 				else if(option == '2'){
 					fread(&pos, sizeof(int), 1, chat_log);
-					while(!feof(chat_log)){
+					while(ftell(chat_log) != end){
 						fread(buffer, sizeof(buffer), 1, chat_log);
 						printf("%s", buffer);
 					}
