@@ -239,10 +239,10 @@ void *serverlistener(void *conn_data)
 
 	/*while(write(connection_descriptor.tempsock, )) > 0 && prog_end != 1)
 	{
-		*/printf("Passei do send... ");
+		printf("Passei do send... ");*/
 
 		while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0){
-			sem_wait(&sem_file);
+			//sem_wait(&sem_file);
 		
 			fseek(chat_log, 0, SEEK_SET);
 			fEmpty = fgetc(chat_log);
@@ -257,10 +257,9 @@ void *serverlistener(void *conn_data)
 				fseek(chat_log, 0, SEEK_END);
 				fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 			}
-			sem_post(&sem_file);
+			//sem_post(&sem_file);
 			//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 		//}
-		sem_post(&sem_file);
 		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
 	}
 	close(connection_descriptor.tempsock);
