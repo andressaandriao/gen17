@@ -22,7 +22,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#define PORTA 7620
 #define MAXHOSTS 20
 
 //Variaveis globais//////////
@@ -48,6 +47,7 @@ int client_send;      //variavel para passar informacao do menu para thread clie
 int prog_end;         //verifica se e o fim do programa nas threads cliente e servidor
 int contato;		  //Variavel para passar a informacao de para qual dos clientes do vetor e a mensagem.
 int client_exclude;	  //Variavel para passar informacao do menu para thread cliente sobre excluir um contato.
+int PORTA;			  //Variavel para a porta utilizada
 
 sem_t 	sem_client;			//Semaforo para esperar o cliente
 
@@ -102,12 +102,12 @@ void clientfunc(){
     	if(client_add == 1){
 			//Todas as informacoes estarao na regiao da struct. O servidor tbm as acessa
 			//Por isso e necessario colocar um semaforo.
-			printf("Digite o ip do contato que deseja inserir: ");
+			printf("Digite o ip do contato que deseja inserir:\n ");
 			fgets(pcip, 16, stdin);
 			strtok(pcip, "\n");
 			__fpurge(stdin);
 			for(i = 0; i<numdecontatos; i++){
-				if(strcmp(hostslist[i].hostip,pcip) == 0){
+				if(strcmp(hostslist[i].hostip,pcip) == 0 && hostslist[i].exist == 1){
 					added = 1;
 				}
 			}
@@ -143,7 +143,7 @@ void clientfunc(){
 				}
 				else
 				{
-					printf("Digite o apelido para o host de IP %s", hostslist[numdecontatos].hostip);
+					printf("Digite o apelido para o host de IP %s\n", hostslist[numdecontatos].hostip);
 					__fpurge(stdin);
 					fgets(hostslist[numdecontatos].hostname, 50, stdin);
 					strtok(hostslist[numdecontatos].hostname, "\n"); //Tira o \n no final
@@ -543,6 +543,10 @@ int main(int argc,char **argv){
 		return 1;
 	}
 	else{
+
+		printf("Digite o numero da porta da aplicacao: ");
+		scanf("%d", &PORTA);
+
 		pthread_join(menuthread, NULL);
 	    pthread_join(clientthread, NULL);
 		return 0;
