@@ -83,7 +83,8 @@ void sendmessage(char *sendline, int sockfd)
 		if(write(sockfd, sendline, strlen(sendline)+1) <= 0){
 			perror("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
 		//}
-	}
+		}
+	printf("Mensagem enviada");
 }
 
 /*******************************************************************************
@@ -174,6 +175,7 @@ void clientfunc(){
     	//Menu avisou pela variavel global que o cliente deve enviar uma mensagem
     	if(client_send == 1){
 
+    		printf("Numero do contato %d", contato);
 			sendmessage(sendline, sockfd[contato]);
 
 			//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
@@ -238,7 +240,9 @@ void *serverlistener(void *conn_data)
 	{
 		printf("Passei do send... ");*/
 
+	printf("Estou apto a receber...");
 	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0){
+		printf("Recebi a mensagem");
 		//sem_wait(&sem_file);
 
 		/*fseek(chat_log, 0, SEEK_SET);
