@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#define PORTA 22000
 #define MAXHOSTS 20
 
 //Variaveis globais//////////
@@ -29,30 +30,19 @@
 typedef struct pcdata {
 		char hostip[16];
 		char hostname[50];
-		int exist;				//Para falar se ele existe ou nao.
+		int clientserver;	//0 = ele e cliente. 1 = ele e servidor.
 	} hostdata;
 
-hostdata hostslist[MAXHOSTS+30]; //Taxa de erro e 30 (desconectar e conectar de novo).
-
-typedef struct serveraddrhandler {
-	
-	int tempsock;
-	char chat_ip[16];
-} listenerthreadparameters;
+hostdata hostslist[MAXHOSTS];//fazer uma lista encadeada?
 
 int numdecontatos;    //Guarda o numero de contatos adicionados ate o momento. Tanto como cliente quanto servidor.
 
 int client_add;       //Variavel para passar a informacao do menu para thread cliente sobre adicionar contato
 int client_send;      //variavel para passar informacao do menu para thread cliente para enviar mensagem
 int prog_end;         //verifica se e o fim do programa nas threads cliente e servidor
-int contato;		  //Variavel para passar a informacao de para qual dos clientes do vetor e a mensagem.
-int client_exclude;	  //Variavel para passar informacao do menu para thread cliente sobre excluir um contato.
-int PORTA;			  //Variavel para a porta utilizada
-FILE *chat_log;		  //Arquivo que guarda as mensagens enquanto o usuario nao voltou para o menu principal.
-					  //Quando ele voltar para o menu principal, as mensagens sao printadas na tela.
+
 
 sem_t 	sem_client;			//Semaforo para esperar o cliente
-sem_t 	sem_file;			//Semaforo para a regiao critica do arquivo
 
 //fim variaveris globais//////
 
@@ -88,7 +78,7 @@ void clientfunc(){
 
     char pcip[16];	//16 pq 4*3(max numeros) + 3(pontos) + 1(\n)
 
-    int sockfd[MAXHOSTS];
+    int sockfd;
     char sendline[100];
     struct sockaddr_in servaddr;
     int i, added = 0;
@@ -105,12 +95,12 @@ void clientfunc(){
     	if(client_add == 1){
 			//Todas as informacoes estarao na regiao da struct. O servidor tbm as acessa
 			//Por isso e necessario colocar um semaforo.
-			printf("Digite o ip do contato que deseja inserir:\n ");
+			printf("Digite o ip do contato que deseja inserir: ");
 			fgets(pcip, 16, stdin);
 			strtok(pcip, "\n");
 			__fpurge(stdin);
 			for(i = 0; i<numdecontatos; i++){
-				if(strcmp(hostslist[i].hostip,pcip) == 0 && hostslist[i].exist == 1){
+				if(strcmp(hostslist[i].hostip,pcip) == 0){
 					added = 1;
 				}
 			}
@@ -123,9 +113,9 @@ void clientfunc(){
 				added = 0;
 				strcpy(hostslist[numdecontatos].hostip, pcip);
 
-				sockfd[numdecontatos] = socket(AF_INET, SOCK_STREAM, 0);
+				sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-				if(sockfd[numdecontatos] == -1)//erro
+				if(sockfd == -1)//erro
 				{
 					perror("Socket dun goofed");
 					client_add = 0;
@@ -139,19 +129,18 @@ void clientfunc(){
 
 				inet_pton(AF_INET, pcip, &(servaddr.sin_addr));//127.0.0.1 (ip targeting self)
 
-				if(connect(sockfd[numdecontatos], (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
+				if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
 				{
 					perror("Connect dun goofed");
 					close(sockfd);//closing dedicated socket
 				}
 				else
 				{
-					printf("Digite o apelido para o host de IP %s\n", hostslist[numdecontatos].hostip);
+					printf("Digite o apelido para o host de IP %s", hostslist[numdecontatos].hostip);
 					__fpurge(stdin);
 					fgets(hostslist[numdecontatos].hostname, 50, stdin);
 					strtok(hostslist[numdecontatos].hostname, "\n"); //Tira o \n no final
 					__fpurge(stdin);
-					hostslist[numdecontatos].exist = 1;
 					numdecontatos++;
 					printf("Dados salvos com sucesso\n\n");
 				}
@@ -164,8 +153,7 @@ void clientfunc(){
     	}
     	//Menu avisou pela variavel global que o cliente deve enviar uma mensagem
     	if(client_send == 1){
-
-			sendmessage(sendline, sockfd[contato]);
+			sendmessage(sendline, sockfd);
 
 			//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
 			client_send = 0;
@@ -173,75 +161,8 @@ void clientfunc(){
 			//Acorda a thread menu
 			sem_post(&sem_client);
 		}
-    	//Caso for broadcast
-    	if(client_send == 2){
-
-    		bzero(sendline, 100);
-
-    		printf("Digite a mensagem: ");
-    		fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
-    		__fpurge(stdin);
-
-    		for(i = 0; i < numdecontatos; i++){
-    			if(hostslist[i].exist == 1)
-    				write(sockfd[i], sendline, strlen(sendline)+1);
-    		}
-
-    		//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
-    		client_send = 0;
-
-    		//Acorda a thread menu
-    		sem_post(&sem_client);
-    	}
-    	if(client_exclude == 1){
-
-    		close(sockfd[i]);
-
-    		//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
-    		client_exclude = 0;
-
-    		printf("Contato excluido com sucesso\n");
-
-    		//Acorda a thread menu
-    		sem_post(&sem_client);
-    	}
     }
    	close(sockfd);
-}
-
-/*******************************************************************************
- *	NOME:		serverlistener
- *	FUNÇÃO:		Thread que recebe as mensagens daqueles que tiverem conectados a
- * 				este pc como servidor
- *	RETORNO:	void
- *******************************************************************************/
-
-
-void *serverlistener(void *conn_data)
-{
-	listenerthreadparameters connection_descriptor = *(listenerthreadparameters*)conn_data;
-	char rcv_msg[1001];
-	char fEmpty;
-	int pos = 1+sizeof(int);
-	
-	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 )
-	{
-		sem_wait(&sem_file);
-		fseek(chat_log, 0, SEEK_SET);
-		fEmpty = fgetc(chat_log);
-		if(fEmpty == '0'){
-			fwrite(&pos, sizeof(int), 1, chat_log);
-			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-			fseek(chat_log, 0, SEEK_SET);
-			fputc('1', chat_log);
-		}
-		else{
-			fseek(chat_log, 0, SEEK_END);
-			fprintf(chat_log, "%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-		}
-		sem_post(&sem_file);
-		//printf("%s mandou uma mensagem: %s\n", connection_descriptor.chat_ip, rcv_msg);
-	}
 }
 
 /*******************************************************************************
@@ -251,23 +172,13 @@ void *serverlistener(void *conn_data)
  *	RETORNO:	void
  *******************************************************************************/
 void serverfunc(){
-	
+
 	char str[100];
 	int listen_fd, comm_fd;
-	
-	listenerthreadparameters *new_connection;
 
 	struct sockaddr_in servaddr, clientaddr;
 
 	listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-	if(listen_fd == -1){
-		perror("Erro na criacao do socket");
-	}
-
-	int enable = 1;
-	if(setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int) < 0))
-		//printf("setsockopt(SO_REUSEADDR) failed");
 
 	bzero(&servaddr, sizeof(servaddr));
 
@@ -276,81 +187,34 @@ void serverfunc(){
 	servaddr.sin_port = htons(PORTA);
 
 	if(bind(listen_fd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0){
-		perror("Houve erro no bind");
+		printf("Houve erro no bind");
 	}
 
 	listen(listen_fd, MAXHOSTS);
 
 	int clientaddrlen = sizeof(struct sockaddr_in);
-	while( comm_fd = accept(listen_fd, (struct sockaddr*) &clientaddr, (socklen_t*)&clientaddrlen) )
-	{
-		//conexao aceita, criando listener
-		pthread_t listenerthread;
-		new_connection = (listenerthreadparameters*)malloc(sizeof(listenerthreadparameters));
-		new_connection->tempsock = comm_fd;
-		strcpy( new_connection->chat_ip, inet_ntoa(clientaddr.sin_addr) );
-		
-		if(pthread_create(&listenerthread, NULL, serverlistener, (void*) new_connection) < 0 )
-			perror("Erro, thread ouvinte nao criada");
-		
-	}//listener criado
-	
+	comm_fd = accept(listen_fd, (struct sockaddr*) &clientaddr, (socklen_t*)&clientaddrlen);
+	printf("*********************************************** %d", comm_fd);
+	printf("Aceitei conexao");
 	if(comm_fd < 0){
 		printf("Erro ao aceitar conexao no servidor");
 	}
 
+	 while(prog_end != 1)
+	{
+
+		printf("%s", inet_ntoa(clientaddr.sin_addr));
+
+		bzero(str, 100);
+
+		if(read(comm_fd, str, 100))
+		{
+			printf("%s mandou uma mensagem: %s", inet_ntoa(clientaddr.sin_addr), str);
+			//write(comm_fd, str, strlen(str)+1); //no more echoing
+		}
+
+	}
     close(listen_fd);
-}
-
-void exclude_contacts(){
-	int i, erro;
-		char option;
-		char stringAux[50];
-		printf("Qual contato deseja excluir?\n1 - Endereco IPv4 do contato\n2 - Nome do contato\n");
-		//Se host for o servidor na conexao
-		erro = 1;
-		__fpurge(stdin);
-		do{
-			__fpurge(stdin);
-			option = getchar();
-			if(option != '1' && option != '2')
-				printf("Voce digitou uma opcao invalida. Tente:\n1 - Endereco IPv4 do contato\n2 - Nome do contato\n");
-		}while(option != '1' && option != '2');
-
-		if(option == '1'){
-			printf("Digite o endereco IPv4\n");
-			__fpurge(stdin);
-			fgets(stringAux, 16, stdin);
-			for(i = 0; i < numdecontatos; i++){
-				if(strcmp(hostslist[i].hostip, stringAux) == 0 && hostslist[i].exist == 1){
-					hostslist[i].exist = 0;
-					contato = i;
-					erro = 0;
-					break;
-				}
-			}
-		}
-		else if(option == '2'){
-			printf("Digite o nome\n");
-			__fpurge(stdin);
-			fgets(stringAux, 50, stdin);
-			strtok(stringAux, "\n");
-			for(i = 0; i < numdecontatos; i++){
-				if(strcmp(hostslist[i].hostname, stringAux) == 0 && hostslist[i].exist == 1){
-					hostslist[i].exist = 0;
-					contato = i;
-					erro = 0;
-					break;
-				}
-			}
-		}
-		if (erro == 0){
-			client_exclude = 1;
-		}
-		else{
-			printf("Contato nao encontrado\n");
-			sem_post(&sem_client);
-		}
 }
 
 /*******************************************************************************
@@ -368,21 +232,14 @@ void send_message(){
 	printf("Para quem gostaria de mandar a mensagem?\n1 - Endereco IPv4 do destinatario\n2 - Nome do destinatario\n");
 	//Se host for o servidor na conexao
 	erro = 1;
-
-	do{
-		__fpurge(stdin);
-		option = getchar();
-		if(option != '1' && option != '2')
-			printf("Voce digitou uma opcao invalida. Tente:\n1 - Endereco IPv4 do contato\n2 - Nome do contato\n");
-	}while(option != '1' && option != '2');
-
+	__fpurge(stdin);
+	option = getchar();
 	if(option == '1'){
 		printf("Digite o endereco IPv4\n");
 		__fpurge(stdin);
 		fgets(stringAux, 16, stdin);
 		for(i = 0; i < numdecontatos; i++){
-			if(strcmp(hostslist[i].hostip, stringAux) == 0 && hostslist[i].exist == 1){
-				contato = i;
+			if(strcmp(hostslist[i].hostip, stringAux) == 0){
 				erro = 0;
 				break;
 			}
@@ -394,8 +251,7 @@ void send_message(){
 		fgets(stringAux, 50, stdin);
 		strtok(stringAux, "\n");
 		for(i = 0; i < numdecontatos; i++){
-			if(strcmp(hostslist[i].hostname, stringAux) == 0 && hostslist[i].exist == 1){
-				contato = i;
+			if(strcmp(hostslist[i].hostname, stringAux) == 0){
 				erro = 0;
 				break;
 			}
@@ -405,68 +261,9 @@ void send_message(){
 		client_send = 1;
 	}
 	else{
-		printf("Contato nao encontrado\n");
-		sem_post(&sem_client);
+		printf("Contato nao encontrado");
 	}
 }
-
-void refresh_messages(){
-	int pos;		//posicao no arquivo de dados
-	char check;		//checa se o arquivo esta vazio ou nao
-	char option;	//lida com o menu
-	char buffer[100];
-
-	do{
-		printf("Deseja:\n1-Imprimir ultimas mensagens\n2-Imprimir todas as mensagens\n3-Excluir historico completo\n4-Sair\n");
-
-		__fpurge(stdin);
-		option = getchar();
-		__fpurge(stdin);
-
-		if(option != '4'){
-			sem_wait(&sem_file);
-
-			fseek(chat_log, 0, SEEK_SET);
-
-			//O primeiro caracter do arquivo indica se ele esta vazio ou nao. 0 = vazio, 1 = nao vazio.
-			check = fgetc(chat_log);
-			if(check == '0'){
-				printf("Voce nao recebeu nenhuma mensagem. Nao ha nada para imprimir ou excluir. D:\n");
-			}
-			else{
-
-				if(option == '1'){
-					fread(&pos, sizeof(int), 1, chat_log);
-					fseek(chat_log, pos, SEEK_SET);
-					while(fread(buffer, sizeof(buffer), 1, chat_log)){
-						printf("%s", buffer);
-					}
-					fseek(chat_log, 0, SEEK_END);
-					pos = ftell(chat_log);
-					fseek(chat_log, sizeof(char), SEEK_SET);
-					fwrite(&pos, sizeof(int), 1, chat_log);
-				}
-				else if(option == '2'){
-					fread(&pos, sizeof(int), 1, chat_log);
-					while(fread(buffer, sizeof(buffer), 1, chat_log)){
-						printf("%s", buffer);
-					}
-					fseek(chat_log, 0, SEEK_END);
-					pos = ftell(chat_log);
-					fseek(chat_log, sizeof(char), SEEK_SET);
-					fwrite(&pos, sizeof(int), 1, chat_log);
-				}
-				else if(option == '3'){
-					fseek(chat_log, 0, SEEK_SET);
-					fputc('0', chat_log);
-				}
-			}
-			sem_post(&sem_file);
-		}
-	}while(option != '4');
-	sem_post(&sem_client);
-}
-
 /*******************************************************************************
  *	NOME:		list_contacts
  *	FUNÇÃO:		Lista os contatos
@@ -478,10 +275,8 @@ void list_contacts(){
 	printf("Nome\t\tIP\n");
 	for(i=0; i<numdecontatos; i++)
 	{
-		if(hostslist[i].exist == 1){
-			printf("%s", hostslist[i].hostname);
-			printf("\t\t%s\n", hostslist[i].hostip);
-		}
+		printf("%s", hostslist[i].hostname);
+		printf("\t\t%s\n", hostslist[i].hostip);
 	}
 	printf("\n");
 }
@@ -503,7 +298,7 @@ void menu_handle(){
     do{
 
 		__fpurge(stdin);
-		printf("Deseja:\n1-Inserir Contato\n2-Listar Contatos\n3-Excluir Contato\n4-Enviar Mensagem\n5-Mensagem em Grupo\n6-Sair\n7-Acessar Mensagens Recebidas\n");
+		printf("Deseja:\n1-Inserir Contato\n2-Listar Contatos\n3-Excluir Contato\n4-Enviar Mensagem\n5-Mensagem em Grupo\n6-Sair\n");
 		choice[0] = getchar();
 		__fpurge(stdin);
 		choice[1] = '\0';//manter a semantica de atoi (precisa de \0)
@@ -523,8 +318,7 @@ void menu_handle(){
 				break;
 
 			case 3:
-				exclude_contacts();
-				sem_wait(&sem_client);
+				printf("Digite o nome ou IP do contato que deseja excluir");
 				break;
 
 			case 4:
@@ -534,17 +328,10 @@ void menu_handle(){
 				break;
 
 			case 5:
-				client_send = 2;
-				sem_wait(&sem_client);
 				break;
 
 			case 6:
 				printf("Adeus!\n");
-				break;
-
-			case 7:
-				refresh_messages();
-				sem_wait(&sem_client);
 				break;
 
 			default:
@@ -565,7 +352,6 @@ void menu_handle(){
  *******************************************************************************/
 void init_semaphores() {
 	sem_init(&sem_client, 0, 0);
-	sem_init(&sem_file, 0, 1);
 }
 
 /*******************************************************************************
@@ -613,30 +399,8 @@ int main(int argc,char **argv){
 	client_add = 0;
 	client_send = 0;
 	numdecontatos = 0;
-	char filename[25];
 
 	pthread_t serverthread, clientthread, menuthread;
-
-	printf("Digite o numero da porta da aplicacao: ");
-	scanf("%d", &PORTA);
-
-	__fpurge(stdin);
-	printf("Digite o seu endereco de IP: ");
-	fgets(filename, 16, stdin);
-	strtok(filename, "\n");
-	__fpurge(stdin);
-
-	strcat(filename, "chat.txt");
-
-
-	chat_log = fopen(filename, "w+b");
-
-	if(chat_log == NULL){
-		printf("Erro na abertura do arquivo");
-	}
-	else{
-		fputc('0', chat_log);
-	}
 
 	init_semaphores();
 	erro = init_threads(&serverthread, &clientthread, &menuthread);
@@ -646,6 +410,7 @@ int main(int argc,char **argv){
 	else{
 		pthread_join(menuthread, NULL);
 	    pthread_join(clientthread, NULL);
+	    pthread_join(serverthread, NULL);
 		return 0;
 	}
 }
