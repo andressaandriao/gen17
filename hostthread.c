@@ -74,7 +74,9 @@ void sendmessage(char *sendline, int sockfd)
 	fgets(sendline, 100, stdin); /*stdin = 0 , for standard input */
 	__fpurge(stdin);
 
-	write(sockfd, sendline, strlen(sendline)+1);
+	if(write(sockfd, sendline, strlen(sendline)+1) == -1){
+		printf("A mensagem nao pode ser enviada, pois o usuario encontra-se desconectado");
+	}
 }
 
 /*******************************************************************************
@@ -215,8 +217,6 @@ void clientfunc(){
  * 				este pc como servidor
  *	RETORNO:	void
  *******************************************************************************/
-
-
 void *serverlistener(void *conn_data)
 {
 	listenerthreadparameters connection_descriptor = *(listenerthreadparameters*)conn_data;
@@ -224,7 +224,7 @@ void *serverlistener(void *conn_data)
 	char fEmpty;
 	int pos = 1+sizeof(int);
 	
-	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0 )
+	while(recv(connection_descriptor.tempsock, rcv_msg, 1001, 0) > 0)
 	{
 		sem_wait(&sem_file);
 		fseek(chat_log, 0, SEEK_SET);
