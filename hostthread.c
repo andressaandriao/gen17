@@ -120,7 +120,7 @@ void clientfunc(){
     int sockfd[MAXHOSTS];
     char sendline[100], verifier, verifybuff[4];
     struct sockaddr_in servaddr;
-    int i, added = 0, j, k, erroip = 0, ipsegmentvalue, dotcount;
+    int i, added = 0, j, k, erroip = 0, ipsegmentvalue, dotcount = 0;
 
     //Continua no loop enquanto menu nao avisar que o programa chegou ao fim atraves da variavel global
     while(prog_end != 1){
@@ -141,19 +141,30 @@ void clientfunc(){
 			verifier = pcip[0];//pega o conteúdo inicial de pcip
 			j=0;
 			k=0;
+			erroip = 0;
 			while(pcip[k] != '\n')
 			{
-				while(pcip[k] != '.') {
-					verifybuff[j] = pcip[i];
+
+				while(pcip[k] != '.' && pcip[k] != '\n') {
+					verifybuff[j] = pcip[k];
 					j++;
 					k++;
 				}
-				dotcount++;//verifica o numero de pontos na string do ipv4
 				verifybuff[j] = '\0';
 				j=0;
+				if(pcip[k] != '\n')
+					k++;
 				ipsegmentvalue = atoi(verifybuff);
 				if(ipsegmentvalue > 255 || ipsegmentvalue < 0)
-					erroip = 1;
+					erroip = 1;//valor esta abaixo ou acima do permitido pelo IPv4
+			}
+			k=0;
+			dotcount = 0;
+			while(pcip[k] != '\n')
+			{//verifica o numero de pontos na string do ip
+				if(pcip[k] == '.')
+					dotcount++;
+				k++;
 			}
 			if(dotcount != 3)
 				erroip = 1;
@@ -223,12 +234,12 @@ void clientfunc(){
 						printf("Dados salvos com sucesso\n\n");
 					}
 				}
-				//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
-				//o cliente adicione novo contato.
-				client_add = 0;
-				//Acorda a thread menu
-				sem_post(&sem_client);
 			}
+			//Variavel global volta a ser 0. Somente o menu pode muda-la para 1 e fazer com que
+			//o cliente adicione novo contato.
+			client_add = 0;
+			//Acorda a thread menu
+			sem_post(&sem_client);
     	}
     	//Menu avisou pela variavel global que o cliente deve enviar uma mensagem
     	if(client_send == 1){
