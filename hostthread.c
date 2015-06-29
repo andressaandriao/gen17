@@ -1,9 +1,5 @@
-/*
- * host.c
- *
- *  Created on: 05/06/2015
- * 
- */
+//Andressa Baptistine Andrião	7547020
+//Guilherme Nishina Fortes		7245552
 
 #include <sys/types.h>
 #include <sys/socket.h>
